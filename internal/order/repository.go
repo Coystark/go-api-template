@@ -23,11 +23,18 @@ type UpdateOrderInput struct {
 	RemoveIDs   []uuid.UUID
 }
 
+// ListParams agrega paginação e filtros opcionais para listagem.
+type ListParams struct {
+	pagination.Query
+	Code  string
+	Title string
+}
+
 // Repository define persistência de pedidos (consumido pelo Service).
 type Repository interface {
 	Create(ctx context.Context, o *Order, services []OrderService) error
 	FindByID(ctx context.Context, id uuid.UUID) (*Order, error)
-	List(ctx context.Context, query pagination.Query) ([]Order, int64, error)
+	List(ctx context.Context, in ListParams) ([]Order, int64, error)
 	Update(ctx context.Context, orderID uuid.UUID, in UpdateOrderInput) error
 	Delete(ctx context.Context, id uuid.UUID) error
 }
@@ -67,17 +74,24 @@ func (r *gormRepository) FindByID(ctx context.Context, id uuid.UUID) (*Order, er
 	return &o, nil
 }
 
-func (r *gormRepository) List(ctx context.Context, query pagination.Query) ([]Order, int64, error) {
-	var total int64
+func (r *gormRepository) List(ctx context.Context, in ListParams) ([]Order, int64, error) {
 	db := r.db.WithContext(ctx).Model(&Order{})
+	if in.Code != "" {
+		db = db.Where("code ILIKE ?", "%"+in.Code+"%")
+	}
+	if in.Title != "" {
+		db = db.Where("title ILIKE ?", "%"+in.Title+"%")
+	}
+
+	var total int64
 	if err := db.Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("count orders: %w", err)
 	}
 
 	var orders []Order
 	if err := db.Order("created_at DESC").
-		Limit(query.PageSize).
-		Offset(pagination.Offset(query)).
+		Limit(in.PageSize).
+		Offset(pagination.Offset(in.Query)).
 		Find(&orders).Error; err != nil {
 		return nil, 0, fmt.Errorf("list orders: %w", err)
 	}

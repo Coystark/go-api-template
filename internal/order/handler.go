@@ -64,15 +64,17 @@ func (h *Handler) Create(c *gin.Context) {
 // @Tags			orders
 // @Produce			json
 // @Security		BearerAuth
-// @Param			page		query		int	false	"Página, começando em 1"	default(1)
-// @Param			page_size	query		int	false	"Itens por página, máximo 100"	default(20)
+// @Param			page		query		int		false	"Página, começando em 1"	default(1)
+// @Param			page_size	query		int		false	"Itens por página, máximo 100"	default(20)
+// @Param			code		query		string	false	"Filtro parcial case-insensitive em `code` (ILIKE)"
+// @Param			title		query		string	false	"Filtro parcial case-insensitive em `title` (ILIKE)"
 // @Success			200			{object}	ListResponseDTO
 // @Failure			400			{object}	httperr.ErrorResponse
 // @Failure			401			{object}	httperr.ErrorResponse
 // @Failure			500			{object}	httperr.ErrorResponse
 // @Router			/orders [get]
 func (h *Handler) List(c *gin.Context) {
-	query, ok := ginbind.Pagination(c)
+	query, ok := ginbind.Query[ListQueryDTO](c, "invalid list query")
 	if !ok {
 		return
 	}

@@ -71,12 +71,13 @@ func (s *Service) GetByID(ctx context.Context, id uuid.UUID) (*ResponseDTO, erro
 
 // List retorna pedidos resumidos com paginação.
 func (s *Service) List(ctx context.Context, in ListQueryDTO) (*ListResponseDTO, error) {
-	query := pagination.Normalize(in)
-	if err := s.validator.Struct(query); err != nil {
+	in.Query = pagination.Normalize(in.Query)
+	if err := s.validator.Struct(in); err != nil {
 		return nil, fmt.Errorf("validate list query: %w", err)
 	}
 
-	orders, total, err := s.repo.List(ctx, query)
+	params := ListParams{Query: in.Query, Code: in.Code, Title: in.Title}
+	orders, total, err := s.repo.List(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +87,7 @@ func (s *Service) List(ctx context.Context, in ListQueryDTO) (*ListResponseDTO, 
 		items = append(items, toResponseDTO(&orders[i]))
 	}
 
-	meta := pagination.NewMeta(query, total)
+	meta := pagination.NewMeta(in.Query, total)
 	return &ListResponseDTO{
 		Items: items,
 		Meta:  meta,

@@ -44,8 +44,12 @@ type UpdateOrderDTO struct {
 	RemovedServiceIDs []uuid.UUID         `json:"removed_service_ids"`
 }
 
-// ListQueryDTO representa parâmetros de paginação para listagem de pedidos.
-type ListQueryDTO = pagination.Query
+// ListQueryDTO representa query string da listagem: paginação e filtros opcionais (substring case-insensitive no repositório).
+type ListQueryDTO struct {
+	pagination.Query
+	Code  string `form:"code" validate:"omitempty,max=255"`
+	Title string `form:"title" validate:"omitempty,max=255"`
+}
 
 // ListResponseDTO representa uma página de pedidos.
 type ListResponseDTO struct {

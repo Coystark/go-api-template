@@ -3,6 +3,7 @@ package order
 import (
 	"context"
 	"sort"
+	"strings"
 	"testing"
 	"time"
 
@@ -43,12 +44,20 @@ func (f *fakeRepo) FindByID(ctx context.Context, id uuid.UUID) (*Order, error) {
 	return &cp, nil
 }
 
-func (f *fakeRepo) List(ctx context.Context, query pagination.Query) ([]Order, int64, error) {
+func (f *fakeRepo) List(ctx context.Context, in ListParams) ([]Order, int64, error) {
 	_ = ctx
 	orders := make([]Order, 0, len(f.orders))
 	for id, o := range f.orders {
 		if f.isDeleted(id) {
 			continue
+		}
+		if in.Title != "" && !strings.Contains(strings.ToLower(o.Title), strings.ToLower(in.Title)) {
+			continue
+		}
+		if in.Code != "" {
+			if o.Code == nil || !strings.Contains(strings.ToLower(*o.Code), strings.ToLower(in.Code)) {
+				continue
+			}
 		}
 		cp := *o
 		cp.OrderServices = nil
@@ -60,11 +69,11 @@ func (f *fakeRepo) List(ctx context.Context, query pagination.Query) ([]Order, i
 	})
 
 	total := int64(len(orders))
-	start := pagination.Offset(query)
+	start := pagination.Offset(in.Query)
 	if start >= len(orders) {
 		return []Order{}, total, nil
 	}
-	end := start + query.PageSize
+	end := start + in.PageSize
 	if end > len(orders) {
 		end = len(orders)
 	}
@@ -215,7 +224,7 @@ func TestService_List_PaginatesAndSummarizes(t *testing.T) {
 	repo.orders[second.ID].CreatedAt = time.Date(2026, 5, 12, 9, 0, 0, 0, time.UTC)
 	repo.orders[third.ID].CreatedAt = time.Date(2026, 5, 13, 9, 0, 0, 0, time.UTC)
 
-	out, err := svc.List(ctx, ListQueryDTO{Page: 1, PageSize: 2})
+	out, err := svc.List(ctx, ListQueryDTO{Query: pagination.Query{Page: 1, PageSize: 2}})
 	require.NoError(t, err)
 	require.Equal(t, 1, out.Page)
 	require.Equal(t, 2, out.PageSize)
@@ -227,11 +236,50 @@ func TestService_List_PaginatesAndSummarizes(t *testing.T) {
 	require.Empty(t, out.Items[0].OrderServices)
 	require.Empty(t, out.Items[1].OrderServices)
 
-	out, err = svc.List(ctx, ListQueryDTO{Page: 2, PageSize: 2})
+	out, err = svc.List(ctx, ListQueryDTO{Query: pagination.Query{Page: 2, PageSize: 2}})
 	require.NoError(t, err)
 	require.Len(t, out.Items, 1)
 	require.Equal(t, first.ID, out.Items[0].ID)
 	require.Empty(t, out.Items[0].OrderServices)
+}
+
+func TestService_List_FiltersByCodeAndTitle(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeRepo()
+	svc := NewService(repo, validator.New())
+
+	_, err := svc.Create(ctx, CreateOrderDTO{
+		Title:         "Alpha Pedido",
+		Code:          ptrStr("ORD-100"),
+		OrderServices: []OrderServiceInput{{Title: "S", StartDate: testSvcStart}},
+	})
+	require.NoError(t, err)
+	_, err = svc.Create(ctx, CreateOrderDTO{
+		Title:         "Beta outro",
+		Code:          ptrStr("ORD-200"),
+		OrderServices: []OrderServiceInput{{Title: "S", StartDate: testSvcStart}},
+	})
+	require.NoError(t, err)
+	_, err = svc.Create(ctx, CreateOrderDTO{
+		Title:         "Gamma",
+		OrderServices: []OrderServiceInput{{Title: "S", StartDate: testSvcStart}},
+	})
+	require.NoError(t, err)
+
+	byCode, err := svc.List(ctx, ListQueryDTO{Query: pagination.Query{Page: 1, PageSize: 10}, Code: "ord-1"})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), byCode.Total)
+	require.Equal(t, "Alpha Pedido", byCode.Items[0].Title)
+
+	byTitle, err := svc.List(ctx, ListQueryDTO{Query: pagination.Query{Page: 1, PageSize: 10}, Title: "BETA"})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), byTitle.Total)
+	require.Equal(t, "Beta outro", byTitle.Items[0].Title)
+
+	both, err := svc.List(ctx, ListQueryDTO{Query: pagination.Query{Page: 1, PageSize: 10}, Code: "ORD", Title: "pha"})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), both.Total)
+	require.Equal(t, "Alpha Pedido", both.Items[0].Title)
 }
 
 func TestService_List_DefaultsAndCapsPageSize(t *testing.T) {
@@ -239,7 +287,7 @@ func TestService_List_DefaultsAndCapsPageSize(t *testing.T) {
 	repo := newFakeRepo()
 	svc := NewService(repo, validator.New())
 
-	out, err := svc.List(ctx, ListQueryDTO{PageSize: 500})
+	out, err := svc.List(ctx, ListQueryDTO{Query: pagination.Query{PageSize: 500}})
 	require.NoError(t, err)
 	require.Equal(t, 1, out.Page)
 	require.Equal(t, 100, out.PageSize)
@@ -252,7 +300,7 @@ func TestService_List_InvalidPageFails(t *testing.T) {
 	repo := newFakeRepo()
 	svc := NewService(repo, validator.New())
 
-	_, err := svc.List(ctx, ListQueryDTO{Page: -1, PageSize: 20})
+	_, err := svc.List(ctx, ListQueryDTO{Query: pagination.Query{Page: -1, PageSize: 20}})
 	require.Error(t, err)
 }
 
