@@ -23,7 +23,7 @@ func NewHandler(svc *Service) *Handler {
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, _ gin.HandlerFunc) {
 	rg.POST("/orders", h.Create)
 	rg.GET("/orders/:id", h.GetByID)
-	rg.PATCH("/orders/:id", h.Update)
+	rg.PUT("/orders/:id", h.Update)
 }
 
 // @Summary			Criar pedido
@@ -78,18 +78,18 @@ func (h *Handler) GetByID(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-// @Summary			Atualizar pedido (parcial)
-// @Description		Atualização parcial: título opcional; itens em `order_services` com `id` são UPDATE, sem `id` são INSERT; `removed_service_ids` deleta na mesma transação. Itens omitidos permanecem inalterados.
+// @Summary			Atualizar pedido
+// @Description		Replace total do cabeçalho: `title` obrigatório; `subject`, `code`, `sent_at` e `converted_at` omitidos ou `null` gravam NULL (reenvie para manter). Em `order_services`, linhas com `id` são UPDATE (sem `id` são INSERT); linhas não enviadas permanecem; `removed_service_ids` remove na mesma transação. Em UPDATE de linha, `end_date` e `observations` omitidos ou `null` gravam NULL — reenvie para mantê-los.
 // @Tags			orders
 // @Accept			json
 // @Produce			json
 // @Param			id		path		string			true	"UUID do pedido"
-// @Param			body	body		UpdateOrderDTO	true	"Patch do pedido"
+// @Param			body	body		UpdateOrderDTO	true	"Corpo do pedido"
 // @Success			200		{object}	ResponseDTO
 // @Failure			400		{object}	ErrorResponse
 // @Failure			404		{object}	ErrorResponse
 // @Failure			500		{object}	ErrorResponse
-// @Router			/orders/{id} [patch]
+// @Router			/orders/{id} [put]
 func (h *Handler) Update(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {

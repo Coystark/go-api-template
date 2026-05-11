@@ -37,9 +37,12 @@ func (s *Service) Create(ctx context.Context, in CreateOrderDTO) (*ResponseDTO, 
 	services := make([]OrderService, 0, len(in.OrderServices))
 	for _, row := range in.OrderServices {
 		services = append(services, OrderService{
-			ID:      uuid.New(),
-			OrderID: orderID,
-			Title:   row.Title,
+			ID:             uuid.New(),
+			OrderID:        orderID,
+			Title:          row.Title,
+			StartDate:      row.StartDate,
+			EndDate:        row.EndDate,
+			Observations:   row.Observations,
 		})
 	}
 
@@ -65,8 +68,9 @@ func (s *Service) GetByID(ctx context.Context, id uuid.UUID) (*ResponseDTO, erro
 	return &out, nil
 }
 
-// Update aplica uma atualização parcial: itens com ID viram UPDATE, sem ID viram INSERT,
-// e RemovedServiceIDs são deletados na mesma transação. Omissões não apagam nada.
+// Update: cabeçalho do pedido em replace total (title + opcionais como vêm no DTO; nil = NULL no banco).
+// Itens em order_services com ID viram UPDATE, sem ID viram INSERT; RemovedServiceIDs deletam na mesma transação.
+// Linhas não listadas não mudam. Em UPDATE de linha, end_date e observations nil persistem NULL.
 func (s *Service) Update(ctx context.Context, id uuid.UUID, in UpdateOrderDTO) (*ResponseDTO, error) {
 	if err := s.validator.Struct(in); err != nil {
 		return nil, fmt.Errorf("validate update dto: %w", err)
@@ -82,9 +86,12 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, in UpdateOrderDTO) (
 	for _, row := range in.OrderServices {
 		if row.ID == nil {
 			creates = append(creates, OrderService{
-				ID:      uuid.New(),
-				OrderID: id,
-				Title:   row.Title,
+				ID:             uuid.New(),
+				OrderID:        id,
+				Title:          row.Title,
+				StartDate:      row.StartDate,
+				EndDate:        row.EndDate,
+				Observations:   row.Observations,
 			})
 			continue
 		}
@@ -92,9 +99,12 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, in UpdateOrderDTO) (
 			return nil, fmt.Errorf("service %s is both updated and removed: %w", *row.ID, ErrServiceNotInOrder)
 		}
 		updates = append(updates, OrderService{
-			ID:      *row.ID,
-			OrderID: id,
-			Title:   row.Title,
+			ID:             *row.ID,
+			OrderID:        id,
+			Title:          row.Title,
+			StartDate:      row.StartDate,
+			EndDate:        row.EndDate,
+			Observations:   row.Observations,
 		})
 	}
 
@@ -126,10 +136,13 @@ func toResponseDTO(o *Order) ResponseDTO {
 	for i := range o.OrderServices {
 		row := &o.OrderServices[i]
 		svc = append(svc, OrderServiceResponse{
-			ID:        row.ID,
-			Title:     row.Title,
-			CreatedAt: row.CreatedAt,
-			UpdatedAt: row.UpdatedAt,
+			ID:             row.ID,
+			Title:          row.Title,
+			StartDate:      row.StartDate,
+			EndDate:        row.EndDate,
+			Observations:   row.Observations,
+			CreatedAt:      row.CreatedAt,
+			UpdatedAt:      row.UpdatedAt,
 		})
 	}
 	return ResponseDTO{

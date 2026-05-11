@@ -26,11 +26,14 @@ func (Order) TableName() string {
 
 // OrderService é um serviço vinculado a um pedido.
 type OrderService struct {
-	ID        uuid.UUID `gorm:"type:uuid;primaryKey"`
-	OrderID   uuid.UUID `gorm:"type:uuid;not null;index"`
-	Title     string    `gorm:"type:text;not null"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID           uuid.UUID  `gorm:"type:uuid;primaryKey"`
+	OrderID      uuid.UUID  `gorm:"type:uuid;not null;index"`
+	Title        string     `gorm:"type:text;not null"`
+	StartDate    time.Time  `gorm:"column:start_date;not null"`
+	EndDate      *time.Time `gorm:"column:end_date"`
+	Observations *string    `gorm:"type:text"`
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
 
 // TableName define o nome da tabela para o GORM.

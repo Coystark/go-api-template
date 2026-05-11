@@ -159,8 +159,8 @@ const docTemplate = `{
                     }
                 }
             },
-            "patch": {
-                "description": "Atualização parcial: título opcional; itens em ` + "`" + `order_services` + "`" + ` com ` + "`" + `id` + "`" + ` são UPDATE, sem ` + "`" + `id` + "`" + ` são INSERT; ` + "`" + `removed_service_ids` + "`" + ` deleta na mesma transação. Itens omitidos permanecem inalterados.",
+            "put": {
+                "description": "Replace total do cabeçalho: ` + "`" + `title` + "`" + ` obrigatório; ` + "`" + `subject` + "`" + `, ` + "`" + `code` + "`" + `, ` + "`" + `sent_at` + "`" + ` e ` + "`" + `converted_at` + "`" + ` omitidos ou ` + "`" + `null` + "`" + ` gravam NULL (reenvie para manter). Em ` + "`" + `order_services` + "`" + `, linhas com ` + "`" + `id` + "`" + ` são UPDATE (sem ` + "`" + `id` + "`" + ` são INSERT); linhas não enviadas permanecem; ` + "`" + `removed_service_ids` + "`" + ` remove na mesma transação. Em UPDATE de linha, ` + "`" + `end_date` + "`" + ` e ` + "`" + `observations` + "`" + ` omitidos ou ` + "`" + `null` + "`" + ` gravam NULL — reenvie para mantê-los.",
                 "consumes": [
                     "application/json"
                 ],
@@ -170,7 +170,7 @@ const docTemplate = `{
                 "tags": [
                     "orders"
                 ],
-                "summary": "Atualizar pedido (parcial)",
+                "summary": "Atualizar pedido",
                 "parameters": [
                     {
                         "type": "string",
@@ -180,7 +180,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Patch do pedido",
+                        "description": "Corpo do pedido",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -390,10 +390,21 @@ const docTemplate = `{
         "order.OrderServiceInput": {
             "type": "object",
             "required": [
+                "start_date",
                 "title"
             ],
             "properties": {
+                "end_date": {
+                    "type": "string"
+                },
                 "id": {
+                    "type": "string"
+                },
+                "observations": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "start_date": {
                     "type": "string"
                 },
                 "title": {
@@ -407,7 +418,16 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "end_date": {
+                    "type": "string"
+                },
                 "id": {
+                    "type": "string"
+                },
+                "observations": {
+                    "type": "string"
+                },
+                "start_date": {
                     "type": "string"
                 },
                 "title": {
@@ -455,6 +475,9 @@ const docTemplate = `{
         },
         "order.UpdateOrderDTO": {
             "type": "object",
+            "required": [
+                "title"
+            ],
             "properties": {
                 "code": {
                     "type": "string",

@@ -10,9 +10,9 @@ import (
 	"gorm.io/gorm"
 )
 
-// UpdateOrderInput agrega as mudanças parciais aplicadas em um único PATCH.
+// UpdateOrderInput agrega cabeçalho (replace total) e mudanças de linhas em uma única transação.
 type UpdateOrderInput struct {
-	Title       *string
+	Title       string
 	Subject     *string
 	Code        *string
 	SentAt      *time.Time
@@ -66,48 +66,31 @@ func (r *gormRepository) FindByID(ctx context.Context, id uuid.UUID) (*Order, er
 
 func (r *gormRepository) Update(ctx context.Context, orderID uuid.UUID, in UpdateOrderInput) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		orderUpdates := map[string]any{}
-		if in.Title != nil {
-			orderUpdates["title"] = *in.Title
+		orderUpdates := map[string]any{
+			"title":         in.Title,
+			"subject":       in.Subject,
+			"code":          in.Code,
+			"sent_at":       in.SentAt,
+			"converted_at":  in.ConvertedAt,
+			"updated_at":    gorm.Expr("NOW()"),
 		}
-		if in.Subject != nil {
-			orderUpdates["subject"] = *in.Subject
+		res := tx.Model(&Order{}).Where("id = ?", orderID).Updates(orderUpdates)
+		if res.Error != nil {
+			return fmt.Errorf("update order: %w", res.Error)
 		}
-		if in.Code != nil {
-			orderUpdates["code"] = *in.Code
-		}
-		if in.SentAt != nil {
-			orderUpdates["sent_at"] = *in.SentAt
-		}
-		if in.ConvertedAt != nil {
-			orderUpdates["converted_at"] = *in.ConvertedAt
-		}
-
-		if len(orderUpdates) > 0 {
-			orderUpdates["updated_at"] = gorm.Expr("NOW()")
-			res := tx.Model(&Order{}).Where("id = ?", orderID).Updates(orderUpdates)
-			if res.Error != nil {
-				return fmt.Errorf("update order: %w", res.Error)
-			}
-			if res.RowsAffected == 0 {
-				return ErrNotFound
-			}
-		} else {
-			var count int64
-			if err := tx.Model(&Order{}).Where("id = ?", orderID).Count(&count).Error; err != nil {
-				return fmt.Errorf("check order existence: %w", err)
-			}
-			if count == 0 {
-				return ErrNotFound
-			}
+		if res.RowsAffected == 0 {
+			return ErrNotFound
 		}
 
 		for _, svc := range in.Updates {
 			res := tx.Model(&OrderService{}).
 				Where("id = ? AND order_id = ?", svc.ID, orderID).
 				Updates(map[string]any{
-					"title":      svc.Title,
-					"updated_at": gorm.Expr("NOW()"),
+					"title":          svc.Title,
+					"start_date":     svc.StartDate,
+					"end_date":       svc.EndDate,
+					"observations":   svc.Observations,
+					"updated_at":     gorm.Expr("NOW()"),
 				})
 			if res.Error != nil {
 				return fmt.Errorf("update order service %s: %w", svc.ID, res.Error)

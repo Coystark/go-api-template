@@ -44,21 +44,11 @@ func (f *fakeRepo) Update(ctx context.Context, orderID uuid.UUID, in UpdateOrder
 		return ErrNotFound
 	}
 
-	if in.Title != nil {
-		o.Title = *in.Title
-	}
-	if in.Subject != nil {
-		o.Subject = in.Subject
-	}
-	if in.Code != nil {
-		o.Code = in.Code
-	}
-	if in.SentAt != nil {
-		o.SentAt = in.SentAt
-	}
-	if in.ConvertedAt != nil {
-		o.ConvertedAt = in.ConvertedAt
-	}
+	o.Title = in.Title
+	o.Subject = in.Subject
+	o.Code = in.Code
+	o.SentAt = in.SentAt
+	o.ConvertedAt = in.ConvertedAt
 
 	for _, svc := range in.Updates {
 		idx := indexOfService(o.OrderServices, svc.ID)
@@ -66,6 +56,9 @@ func (f *fakeRepo) Update(ctx context.Context, orderID uuid.UUID, in UpdateOrder
 			return ErrServiceNotInOrder
 		}
 		o.OrderServices[idx].Title = svc.Title
+		o.OrderServices[idx].StartDate = svc.StartDate
+		o.OrderServices[idx].EndDate = svc.EndDate
+		o.OrderServices[idx].Observations = svc.Observations
 	}
 
 	if len(in.Creates) > 0 {
@@ -95,6 +88,11 @@ func indexOfService(services []OrderService, id uuid.UUID) int {
 func ptrStr(s string) *string { return &s }
 func ptrTime(t time.Time) *time.Time { return &t }
 
+// datas fixas para serviços nos testes
+var testSvcStart = time.Date(2026, 5, 11, 9, 0, 0, 0, time.UTC)
+var testSvcStart2 = time.Date(2026, 5, 12, 10, 0, 0, 0, time.UTC)
+var testSvcEnd = time.Date(2026, 5, 20, 18, 0, 0, 0, time.UTC)
+
 func TestService_Create_WithServices(t *testing.T) {
 	ctx := context.Background()
 	repo := newFakeRepo()
@@ -107,8 +105,8 @@ func TestService_Create_WithServices(t *testing.T) {
 		Code:    ptrStr("COD-123"),
 		SentAt:  ptrTime(sentAt),
 		OrderServices: []OrderServiceInput{
-			{Title: "Serviço 1"},
-			{Title: "Serviço 2"},
+			{Title: "Serviço 1", StartDate: testSvcStart},
+			{Title: "Serviço 2", StartDate: testSvcStart2, EndDate: ptrTime(testSvcEnd), Observations: ptrStr("nota B")},
 		},
 	})
 	require.NoError(t, err)
@@ -120,7 +118,14 @@ func TestService_Create_WithServices(t *testing.T) {
 	require.Nil(t, out.ConvertedAt)
 	require.Len(t, out.OrderServices, 2)
 	require.Equal(t, "Serviço 1", out.OrderServices[0].Title)
+	require.True(t, out.OrderServices[0].StartDate.Equal(testSvcStart))
+	require.Nil(t, out.OrderServices[0].EndDate)
+	require.Nil(t, out.OrderServices[0].Observations)
 	require.Equal(t, "Serviço 2", out.OrderServices[1].Title)
+	require.True(t, out.OrderServices[1].StartDate.Equal(testSvcStart2))
+	require.NotNil(t, out.OrderServices[1].EndDate)
+	require.True(t, out.OrderServices[1].EndDate.Equal(testSvcEnd))
+	require.Equal(t, "nota B", *out.OrderServices[1].Observations)
 	require.NotEqual(t, uuid.Nil, out.ID)
 }
 
@@ -145,9 +150,9 @@ func TestService_Update_PartialUpsert(t *testing.T) {
 	created, err := svc.Create(ctx, CreateOrderDTO{
 		Title: "Original",
 		OrderServices: []OrderServiceInput{
-			{Title: "Antigo 1"},
-			{Title: "Antigo 2"},
-			{Title: "Antigo 3"},
+			{Title: "Antigo 1", StartDate: testSvcStart},
+			{Title: "Antigo 2", StartDate: testSvcStart},
+			{Title: "Antigo 3", StartDate: testSvcStart},
 		},
 	})
 	require.NoError(t, err)
@@ -158,11 +163,11 @@ func TestService_Update_PartialUpsert(t *testing.T) {
 
 	convertedAt := time.Date(2026, 5, 12, 12, 0, 0, 0, time.UTC)
 	out, err := svc.Update(ctx, created.ID, UpdateOrderDTO{
-		Title: ptrStr("Atualizado"),
+		Title:         "Atualizado",
 		ConvertedAt: ptrTime(convertedAt),
 		OrderServices: []OrderServiceInput{
-			{ID: &editID, Title: "Editado"},
-			{Title: "Novo"},
+			{ID: &editID, Title: "Editado", StartDate: testSvcStart2},
+			{Title: "Novo", StartDate: testSvcStart},
 		},
 	})
 	require.NoError(t, err)
@@ -194,13 +199,13 @@ func TestService_Update_TitleOnly(t *testing.T) {
 	created, err := svc.Create(ctx, CreateOrderDTO{
 		Title: "Original",
 		OrderServices: []OrderServiceInput{
-			{Title: "S1"},
+			{Title: "S1", StartDate: testSvcStart},
 		},
 	})
 	require.NoError(t, err)
 
 	out, err := svc.Update(ctx, created.ID, UpdateOrderDTO{
-		Title: ptrStr("Só título"),
+		Title: "Só título",
 	})
 	require.NoError(t, err)
 	require.Equal(t, "Só título", out.Title)
@@ -216,8 +221,8 @@ func TestService_Update_RemovedServiceIDs(t *testing.T) {
 	created, err := svc.Create(ctx, CreateOrderDTO{
 		Title: "Pedido",
 		OrderServices: []OrderServiceInput{
-			{Title: "Manter"},
-			{Title: "Remover"},
+			{Title: "Manter", StartDate: testSvcStart},
+			{Title: "Remover", StartDate: testSvcStart},
 		},
 	})
 	require.NoError(t, err)
@@ -225,6 +230,7 @@ func TestService_Update_RemovedServiceIDs(t *testing.T) {
 	removeID := created.OrderServices[1].ID
 
 	out, err := svc.Update(ctx, created.ID, UpdateOrderDTO{
+		Title:             "Pedido",
 		RemovedServiceIDs: []uuid.UUID{removeID},
 	})
 	require.NoError(t, err)
@@ -240,15 +246,16 @@ func TestService_Update_RemoveAndUpdateSameID_Fails(t *testing.T) {
 	created, err := svc.Create(ctx, CreateOrderDTO{
 		Title: "Pedido",
 		OrderServices: []OrderServiceInput{
-			{Title: "S1"},
+			{Title: "S1", StartDate: testSvcStart},
 		},
 	})
 	require.NoError(t, err)
 	id := created.OrderServices[0].ID
 
 	_, err = svc.Update(ctx, created.ID, UpdateOrderDTO{
+		Title: "Pedido",
 		OrderServices: []OrderServiceInput{
-			{ID: &id, Title: "X"},
+			{ID: &id, Title: "X", StartDate: testSvcStart2},
 		},
 		RemovedServiceIDs: []uuid.UUID{id},
 	})
@@ -263,7 +270,7 @@ func TestService_Update_ServiceFromAnotherOrderFails(t *testing.T) {
 	other, err := svc.Create(ctx, CreateOrderDTO{
 		Title: "Outro",
 		OrderServices: []OrderServiceInput{
-			{Title: "Alheio"},
+			{Title: "Alheio", StartDate: testSvcStart},
 		},
 	})
 	require.NoError(t, err)
@@ -271,13 +278,14 @@ func TestService_Update_ServiceFromAnotherOrderFails(t *testing.T) {
 
 	target, err := svc.Create(ctx, CreateOrderDTO{
 		Title:         "Alvo",
-		OrderServices: []OrderServiceInput{{Title: "Próprio"}},
+		OrderServices: []OrderServiceInput{{Title: "Próprio", StartDate: testSvcStart}},
 	})
 	require.NoError(t, err)
 
 	_, err = svc.Update(ctx, target.ID, UpdateOrderDTO{
+		Title: "Alvo",
 		OrderServices: []OrderServiceInput{
-			{ID: &foreignID, Title: "Tentativa"},
+			{ID: &foreignID, Title: "Tentativa", StartDate: testSvcStart},
 		},
 	})
 	require.ErrorIs(t, err, ErrServiceNotInOrder)
@@ -290,11 +298,12 @@ func TestService_Update_RemoveUnknownIDFails(t *testing.T) {
 
 	created, err := svc.Create(ctx, CreateOrderDTO{
 		Title:         "Pedido",
-		OrderServices: []OrderServiceInput{{Title: "S1"}},
+		OrderServices: []OrderServiceInput{{Title: "S1", StartDate: testSvcStart}},
 	})
 	require.NoError(t, err)
 
 	_, err = svc.Update(ctx, created.ID, UpdateOrderDTO{
+		Title:             "Pedido",
 		RemovedServiceIDs: []uuid.UUID{uuid.New()},
 	})
 	require.ErrorIs(t, err, ErrServiceNotInOrder)
@@ -306,12 +315,46 @@ func TestService_Update_NotFound(t *testing.T) {
 	svc := NewService(repo, validator.New())
 
 	_, err := svc.Update(ctx, uuid.New(), UpdateOrderDTO{
-		Title: ptrStr("X"),
+		Title: "X",
 		OrderServices: []OrderServiceInput{
-			{Title: "Y"},
+			{Title: "Y", StartDate: testSvcStart},
 		},
 	})
 	require.ErrorIs(t, err, ErrNotFound)
+}
+
+func TestService_Update_ClearsOptionalServiceFieldsWhenOmitted(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeRepo()
+	svc := NewService(repo, validator.New())
+
+	end := time.Date(2026, 6, 1, 12, 0, 0, 0, time.UTC)
+	created, err := svc.Create(ctx, CreateOrderDTO{
+		Title: "Pedido",
+		OrderServices: []OrderServiceInput{
+			{
+				Title:          "S1",
+				StartDate:      testSvcStart,
+				EndDate:        ptrTime(end),
+				Observations:   ptrStr("será limpo"),
+			},
+		},
+	})
+	require.NoError(t, err)
+	sid := created.OrderServices[0].ID
+
+	out, err := svc.Update(ctx, created.ID, UpdateOrderDTO{
+		Title: "Pedido",
+		OrderServices: []OrderServiceInput{
+			{ID: &sid, Title: "S1 renomeado", StartDate: testSvcStart2},
+		},
+	})
+	require.NoError(t, err)
+	require.Len(t, out.OrderServices, 1)
+	require.Equal(t, "S1 renomeado", out.OrderServices[0].Title)
+	require.True(t, out.OrderServices[0].StartDate.Equal(testSvcStart2))
+	require.Nil(t, out.OrderServices[0].EndDate)
+	require.Nil(t, out.OrderServices[0].Observations)
 }
 
 func indexByID(services []OrderServiceResponse) map[uuid.UUID]OrderServiceResponse {
