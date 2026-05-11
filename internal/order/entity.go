@@ -10,6 +10,10 @@ import (
 type Order struct {
 	ID            uuid.UUID `gorm:"type:uuid;primaryKey"`
 	Title         string    `gorm:"type:text;not null"`
+	Subject       *string   `gorm:"type:text"`
+	Code          *string   `gorm:"type:text"`
+	SentAt        *time.Time
+	ConvertedAt   *time.Time
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 	OrderServices []OrderService `gorm:"foreignKey:OrderID"`

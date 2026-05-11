@@ -22,10 +22,20 @@ definitions:
     type: object
   order.CreateOrderDTO:
     properties:
+      code:
+        minLength: 1
+        type: string
+      converted_at:
+        type: string
       order_services:
         items:
           $ref: '#/definitions/order.OrderServiceInput'
         type: array
+      sent_at:
+        type: string
+      subject:
+        minLength: 1
+        type: string
       title:
         type: string
     required:
@@ -38,6 +48,8 @@ definitions:
     type: object
   order.OrderServiceInput:
     properties:
+      id:
+        type: string
       title:
         type: string
     required:
@@ -56,6 +68,10 @@ definitions:
     type: object
   order.ResponseDTO:
     properties:
+      code:
+        type: string
+      converted_at:
+        type: string
       created_at:
         type: string
       id:
@@ -64,6 +80,10 @@ definitions:
         items:
           $ref: '#/definitions/order.OrderServiceResponse'
         type: array
+      sent_at:
+        type: string
+      subject:
+        type: string
       title:
         type: string
       updated_at:
@@ -71,14 +91,27 @@ definitions:
     type: object
   order.UpdateOrderDTO:
     properties:
+      code:
+        minLength: 1
+        type: string
+      converted_at:
+        type: string
       order_services:
         items:
           $ref: '#/definitions/order.OrderServiceInput'
         type: array
-      title:
+      removed_service_ids:
+        items:
+          type: string
+        type: array
+      sent_at:
         type: string
-    required:
-    - title
+      subject:
+        minLength: 1
+        type: string
+      title:
+        minLength: 1
+        type: string
     type: object
   user.CreateDTO:
     properties:
@@ -209,17 +242,19 @@ paths:
       summary: Buscar pedido
       tags:
       - orders
-    put:
+    patch:
       consumes:
       - application/json
-      description: Atualiza título e substitui a lista de serviços do pedido.
+      description: 'Atualização parcial: título opcional; itens em `order_services`
+        com `id` são UPDATE, sem `id` são INSERT; `removed_service_ids` deleta na
+        mesma transação. Itens omitidos permanecem inalterados.'
       parameters:
       - description: UUID do pedido
         in: path
         name: id
         required: true
         type: string
-      - description: Dados do pedido
+      - description: Patch do pedido
         in: body
         name: body
         required: true
@@ -244,7 +279,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/order.ErrorResponse'
-      summary: Atualizar pedido
+      summary: Atualizar pedido (parcial)
       tags:
       - orders
   /users:

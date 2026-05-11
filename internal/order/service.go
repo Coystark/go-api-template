@@ -27,8 +27,12 @@ func (s *Service) Create(ctx context.Context, in CreateOrderDTO) (*ResponseDTO, 
 
 	orderID := uuid.New()
 	o := &Order{
-		ID:    orderID,
-		Title: in.Title,
+		ID:          orderID,
+		Title:       in.Title,
+		Subject:     in.Subject,
+		Code:        in.Code,
+		SentAt:      in.SentAt,
+		ConvertedAt: in.ConvertedAt,
 	}
 	services := make([]OrderService, 0, len(in.OrderServices))
 	for _, row := range in.OrderServices {
@@ -61,22 +65,51 @@ func (s *Service) GetByID(ctx context.Context, id uuid.UUID) (*ResponseDTO, erro
 	return &out, nil
 }
 
-// Update valida e substitui título e lista de serviços do pedido.
+// Update aplica uma atualização parcial: itens com ID viram UPDATE, sem ID viram INSERT,
+// e RemovedServiceIDs são deletados na mesma transação. Omissões não apagam nada.
 func (s *Service) Update(ctx context.Context, id uuid.UUID, in UpdateOrderDTO) (*ResponseDTO, error) {
 	if err := s.validator.Struct(in); err != nil {
 		return nil, fmt.Errorf("validate update dto: %w", err)
 	}
 
-	services := make([]OrderService, 0, len(in.OrderServices))
+	removeSet := make(map[uuid.UUID]struct{}, len(in.RemovedServiceIDs))
+	for _, rid := range in.RemovedServiceIDs {
+		removeSet[rid] = struct{}{}
+	}
+
+	creates := make([]OrderService, 0, len(in.OrderServices))
+	updates := make([]OrderService, 0, len(in.OrderServices))
 	for _, row := range in.OrderServices {
-		services = append(services, OrderService{
-			ID:      uuid.New(),
+		if row.ID == nil {
+			creates = append(creates, OrderService{
+				ID:      uuid.New(),
+				OrderID: id,
+				Title:   row.Title,
+			})
+			continue
+		}
+		if _, conflict := removeSet[*row.ID]; conflict {
+			return nil, fmt.Errorf("service %s is both updated and removed: %w", *row.ID, ErrServiceNotInOrder)
+		}
+		updates = append(updates, OrderService{
+			ID:      *row.ID,
 			OrderID: id,
 			Title:   row.Title,
 		})
 	}
 
-	if err := s.repo.Update(ctx, id, in.Title, services); err != nil {
+	repoIn := UpdateOrderInput{
+		Title:       in.Title,
+		Subject:     in.Subject,
+		Code:        in.Code,
+		SentAt:      in.SentAt,
+		ConvertedAt: in.ConvertedAt,
+		Creates:     creates,
+		Updates:     updates,
+		RemoveIDs:   in.RemovedServiceIDs,
+	}
+
+	if err := s.repo.Update(ctx, id, repoIn); err != nil {
 		return nil, fmt.Errorf("persist order update: %w", err)
 	}
 
@@ -102,6 +135,10 @@ func toResponseDTO(o *Order) ResponseDTO {
 	return ResponseDTO{
 		ID:            o.ID,
 		Title:         o.Title,
+		Subject:       o.Subject,
+		Code:          o.Code,
+		SentAt:        o.SentAt,
+		ConvertedAt:   o.ConvertedAt,
 		OrderServices: svc,
 		CreatedAt:     o.CreatedAt,
 		UpdatedAt:     o.UpdatedAt,

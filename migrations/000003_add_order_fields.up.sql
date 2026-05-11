@@ -1,0 +1,6 @@
+ALTER TABLE orders
+    ADD COLUMN subject TEXT NULL,
+    ADD COLUMN code TEXT NULL,
+    ADD COLUMN sent_at TIMESTAMPTZ NULL,
+    ADD COLUMN converted_at TIMESTAMPTZ NULL;
+

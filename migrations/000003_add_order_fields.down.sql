@@ -1,0 +1,6 @@
+ALTER TABLE orders
+    DROP COLUMN IF EXISTS converted_at,
+    DROP COLUMN IF EXISTS sent_at,
+    DROP COLUMN IF EXISTS code,
+    DROP COLUMN IF EXISTS subject;
+

@@ -159,8 +159,8 @@ const docTemplate = `{
                     }
                 }
             },
-            "put": {
-                "description": "Atualiza título e substitui a lista de serviços do pedido.",
+            "patch": {
+                "description": "Atualização parcial: título opcional; itens em ` + "`" + `order_services` + "`" + ` com ` + "`" + `id` + "`" + ` são UPDATE, sem ` + "`" + `id` + "`" + ` são INSERT; ` + "`" + `removed_service_ids` + "`" + ` deleta na mesma transação. Itens omitidos permanecem inalterados.",
                 "consumes": [
                     "application/json"
                 ],
@@ -170,7 +170,7 @@ const docTemplate = `{
                 "tags": [
                     "orders"
                 ],
-                "summary": "Atualizar pedido",
+                "summary": "Atualizar pedido (parcial)",
                 "parameters": [
                     {
                         "type": "string",
@@ -180,7 +180,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Dados do pedido",
+                        "description": "Patch do pedido",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -354,11 +354,25 @@ const docTemplate = `{
                 "title"
             ],
             "properties": {
+                "code": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "converted_at": {
+                    "type": "string"
+                },
                 "order_services": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/order.OrderServiceInput"
                     }
+                },
+                "sent_at": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string",
+                    "minLength": 1
                 },
                 "title": {
                     "type": "string"
@@ -379,6 +393,9 @@ const docTemplate = `{
                 "title"
             ],
             "properties": {
+                "id": {
+                    "type": "string"
+                },
                 "title": {
                     "type": "string"
                 }
@@ -404,6 +421,12 @@ const docTemplate = `{
         "order.ResponseDTO": {
             "type": "object",
             "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "converted_at": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
@@ -416,6 +439,12 @@ const docTemplate = `{
                         "$ref": "#/definitions/order.OrderServiceResponse"
                     }
                 },
+                "sent_at": {
+                    "type": "string"
+                },
+                "subject": {
+                    "type": "string"
+                },
                 "title": {
                     "type": "string"
                 },
@@ -426,18 +455,36 @@ const docTemplate = `{
         },
         "order.UpdateOrderDTO": {
             "type": "object",
-            "required": [
-                "title"
-            ],
             "properties": {
+                "code": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "converted_at": {
+                    "type": "string"
+                },
                 "order_services": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/order.OrderServiceInput"
                     }
                 },
-                "title": {
+                "removed_service_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "sent_at": {
                     "type": "string"
+                },
+                "subject": {
+                    "type": "string",
+                    "minLength": 1
+                },
+                "title": {
+                    "type": "string",
+                    "minLength": 1
                 }
             }
         },

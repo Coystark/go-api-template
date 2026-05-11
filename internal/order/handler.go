@@ -23,7 +23,7 @@ func NewHandler(svc *Service) *Handler {
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, _ gin.HandlerFunc) {
 	rg.POST("/orders", h.Create)
 	rg.GET("/orders/:id", h.GetByID)
-	rg.PUT("/orders/:id", h.Update)
+	rg.PATCH("/orders/:id", h.Update)
 }
 
 // @Summary			Criar pedido
@@ -78,18 +78,18 @@ func (h *Handler) GetByID(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-// @Summary			Atualizar pedido
-// @Description		Atualiza título e substitui a lista de serviços do pedido.
+// @Summary			Atualizar pedido (parcial)
+// @Description		Atualização parcial: título opcional; itens em `order_services` com `id` são UPDATE, sem `id` são INSERT; `removed_service_ids` deleta na mesma transação. Itens omitidos permanecem inalterados.
 // @Tags			orders
 // @Accept			json
 // @Produce			json
 // @Param			id		path		string			true	"UUID do pedido"
-// @Param			body	body		UpdateOrderDTO	true	"Dados do pedido"
+// @Param			body	body		UpdateOrderDTO	true	"Patch do pedido"
 // @Success			200		{object}	ResponseDTO
 // @Failure			400		{object}	ErrorResponse
 // @Failure			404		{object}	ErrorResponse
 // @Failure			500		{object}	ErrorResponse
-// @Router			/orders/{id} [put]
+// @Router			/orders/{id} [patch]
 func (h *Handler) Update(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
@@ -116,6 +116,8 @@ func handleServiceError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, ErrNotFound):
 		writeError(c, http.StatusNotFound, "order not found")
+	case errors.Is(err, ErrServiceNotInOrder):
+		writeError(c, http.StatusBadRequest, "order service does not belong to order")
 	default:
 		var valErr validator.ValidationErrors
 		if errors.As(err, &valErr) {

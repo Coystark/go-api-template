@@ -4,16 +4,29 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+// UpdateOrderInput agrega as mudanças parciais aplicadas em um único PATCH.
+type UpdateOrderInput struct {
+	Title       *string
+	Subject     *string
+	Code        *string
+	SentAt      *time.Time
+	ConvertedAt *time.Time
+	Creates     []OrderService
+	Updates     []OrderService
+	RemoveIDs   []uuid.UUID
+}
+
 // Repository define persistência de pedidos (consumido pelo Service).
 type Repository interface {
 	Create(ctx context.Context, o *Order, services []OrderService) error
 	FindByID(ctx context.Context, id uuid.UUID) (*Order, error)
-	Update(ctx context.Context, orderID uuid.UUID, title string, services []OrderService) error
+	Update(ctx context.Context, orderID uuid.UUID, in UpdateOrderInput) error
 }
 
 type gormRepository struct {
@@ -51,27 +64,75 @@ func (r *gormRepository) FindByID(ctx context.Context, id uuid.UUID) (*Order, er
 	return &o, nil
 }
 
-func (r *gormRepository) Update(ctx context.Context, orderID uuid.UUID, title string, services []OrderService) error {
+func (r *gormRepository) Update(ctx context.Context, orderID uuid.UUID, in UpdateOrderInput) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		res := tx.Model(&Order{}).Where("id = ?", orderID).Updates(map[string]any{
-			"title":      title,
-			"updated_at": gorm.Expr("NOW()"),
-		})
-		if res.Error != nil {
-			return fmt.Errorf("update order: %w", res.Error)
+		orderUpdates := map[string]any{}
+		if in.Title != nil {
+			orderUpdates["title"] = *in.Title
 		}
-		if res.RowsAffected == 0 {
-			return ErrNotFound
+		if in.Subject != nil {
+			orderUpdates["subject"] = *in.Subject
 		}
-		if err := tx.Where("order_id = ?", orderID).Delete(&OrderService{}).Error; err != nil {
-			return fmt.Errorf("delete order services: %w", err)
+		if in.Code != nil {
+			orderUpdates["code"] = *in.Code
 		}
-		if len(services) == 0 {
-			return nil
+		if in.SentAt != nil {
+			orderUpdates["sent_at"] = *in.SentAt
 		}
-		if err := tx.Create(&services).Error; err != nil {
-			return fmt.Errorf("create order services: %w", err)
+		if in.ConvertedAt != nil {
+			orderUpdates["converted_at"] = *in.ConvertedAt
 		}
+
+		if len(orderUpdates) > 0 {
+			orderUpdates["updated_at"] = gorm.Expr("NOW()")
+			res := tx.Model(&Order{}).Where("id = ?", orderID).Updates(orderUpdates)
+			if res.Error != nil {
+				return fmt.Errorf("update order: %w", res.Error)
+			}
+			if res.RowsAffected == 0 {
+				return ErrNotFound
+			}
+		} else {
+			var count int64
+			if err := tx.Model(&Order{}).Where("id = ?", orderID).Count(&count).Error; err != nil {
+				return fmt.Errorf("check order existence: %w", err)
+			}
+			if count == 0 {
+				return ErrNotFound
+			}
+		}
+
+		for _, svc := range in.Updates {
+			res := tx.Model(&OrderService{}).
+				Where("id = ? AND order_id = ?", svc.ID, orderID).
+				Updates(map[string]any{
+					"title":      svc.Title,
+					"updated_at": gorm.Expr("NOW()"),
+				})
+			if res.Error != nil {
+				return fmt.Errorf("update order service %s: %w", svc.ID, res.Error)
+			}
+			if res.RowsAffected == 0 {
+				return ErrServiceNotInOrder
+			}
+		}
+
+		if len(in.Creates) > 0 {
+			if err := tx.Create(&in.Creates).Error; err != nil {
+				return fmt.Errorf("create order services: %w", err)
+			}
+		}
+
+		if len(in.RemoveIDs) > 0 {
+			res := tx.Where("order_id = ? AND id IN ?", orderID, in.RemoveIDs).Delete(&OrderService{})
+			if res.Error != nil {
+				return fmt.Errorf("delete order services: %w", res.Error)
+			}
+			if res.RowsAffected != int64(len(in.RemoveIDs)) {
+				return ErrServiceNotInOrder
+			}
+		}
+
 		return nil
 	})
 }
