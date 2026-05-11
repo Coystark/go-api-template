@@ -85,7 +85,7 @@ func indexOfService(services []OrderService, id uuid.UUID) int {
 	return -1
 }
 
-func ptrStr(s string) *string { return &s }
+func ptrStr(s string) *string        { return &s }
 func ptrTime(t time.Time) *time.Time { return &t }
 
 // datas fixas para serviços nos testes
@@ -163,7 +163,7 @@ func TestService_Update_PartialUpsert(t *testing.T) {
 
 	convertedAt := time.Date(2026, 5, 12, 12, 0, 0, 0, time.UTC)
 	out, err := svc.Update(ctx, created.ID, UpdateOrderDTO{
-		Title:         "Atualizado",
+		Title:       "Atualizado",
 		ConvertedAt: ptrTime(convertedAt),
 		OrderServices: []OrderServiceInput{
 			{ID: &editID, Title: "Editado", StartDate: testSvcStart2},
@@ -333,10 +333,10 @@ func TestService_Update_ClearsOptionalServiceFieldsWhenOmitted(t *testing.T) {
 		Title: "Pedido",
 		OrderServices: []OrderServiceInput{
 			{
-				Title:          "S1",
-				StartDate:      testSvcStart,
-				EndDate:        ptrTime(end),
-				Observations:   ptrStr("será limpo"),
+				Title:        "S1",
+				StartDate:    testSvcStart,
+				EndDate:      ptrTime(end),
+				Observations: ptrStr("será limpo"),
 			},
 		},
 	})

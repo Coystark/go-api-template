@@ -67,12 +67,12 @@ func (r *gormRepository) FindByID(ctx context.Context, id uuid.UUID) (*Order, er
 func (r *gormRepository) Update(ctx context.Context, orderID uuid.UUID, in UpdateOrderInput) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		orderUpdates := map[string]any{
-			"title":         in.Title,
-			"subject":       in.Subject,
-			"code":          in.Code,
-			"sent_at":       in.SentAt,
-			"converted_at":  in.ConvertedAt,
-			"updated_at":    gorm.Expr("NOW()"),
+			"title":        in.Title,
+			"subject":      in.Subject,
+			"code":         in.Code,
+			"sent_at":      in.SentAt,
+			"converted_at": in.ConvertedAt,
+			"updated_at":   gorm.Expr("NOW()"),
 		}
 		res := tx.Model(&Order{}).Where("id = ?", orderID).Updates(orderUpdates)
 		if res.Error != nil {
@@ -86,11 +86,11 @@ func (r *gormRepository) Update(ctx context.Context, orderID uuid.UUID, in Updat
 			res := tx.Model(&OrderService{}).
 				Where("id = ? AND order_id = ?", svc.ID, orderID).
 				Updates(map[string]any{
-					"title":          svc.Title,
-					"start_date":     svc.StartDate,
-					"end_date":       svc.EndDate,
-					"observations":   svc.Observations,
-					"updated_at":     gorm.Expr("NOW()"),
+					"title":        svc.Title,
+					"start_date":   svc.StartDate,
+					"end_date":     svc.EndDate,
+					"observations": svc.Observations,
+					"updated_at":   gorm.Expr("NOW()"),
 				})
 			if res.Error != nil {
 				return fmt.Errorf("update order service %s: %w", svc.ID, res.Error)

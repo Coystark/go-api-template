@@ -17,10 +17,10 @@ type ErrorResponse struct {
 // gravam NULL; reenvie os valores para mantê-los.
 type OrderServiceInput struct {
 	ID           *uuid.UUID `json:"id,omitempty"`
-	Title        string       `json:"title" validate:"required"`
-	StartDate    time.Time    `json:"start_date" validate:"required"`
-	EndDate      *time.Time   `json:"end_date,omitempty"`
-	Observations *string      `json:"observations,omitempty" validate:"omitempty,min=1"`
+	Title        string     `json:"title" validate:"required"`
+	StartDate    time.Time  `json:"start_date" validate:"required"`
+	EndDate      *time.Time `json:"end_date,omitempty"`
+	Observations *string    `json:"observations,omitempty" validate:"omitempty,min=1"`
 }
 
 // CreateOrderDTO representa entrada para criação de pedido.
@@ -50,13 +50,13 @@ type UpdateOrderDTO struct {
 
 // OrderServiceResponse é a visão pública de um serviço do pedido.
 type OrderServiceResponse struct {
-	ID             uuid.UUID  `json:"id"`
-	Title          string     `json:"title"`
-	StartDate      time.Time  `json:"start_date"`
-	EndDate        *time.Time `json:"end_date,omitempty"`
-	Observations   *string    `json:"observations,omitempty"`
-	CreatedAt      time.Time  `json:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at"`
+	ID           uuid.UUID  `json:"id"`
+	Title        string     `json:"title"`
+	StartDate    time.Time  `json:"start_date"`
+	EndDate      *time.Time `json:"end_date,omitempty"`
+	Observations *string    `json:"observations,omitempty"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
 }
 
 // ResponseDTO é a visão pública do pedido.

@@ -37,12 +37,12 @@ func (s *Service) Create(ctx context.Context, in CreateOrderDTO) (*ResponseDTO, 
 	services := make([]OrderService, 0, len(in.OrderServices))
 	for _, row := range in.OrderServices {
 		services = append(services, OrderService{
-			ID:             uuid.New(),
-			OrderID:        orderID,
-			Title:          row.Title,
-			StartDate:      row.StartDate,
-			EndDate:        row.EndDate,
-			Observations:   row.Observations,
+			ID:           uuid.New(),
+			OrderID:      orderID,
+			Title:        row.Title,
+			StartDate:    row.StartDate,
+			EndDate:      row.EndDate,
+			Observations: row.Observations,
 		})
 	}
 
@@ -86,12 +86,12 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, in UpdateOrderDTO) (
 	for _, row := range in.OrderServices {
 		if row.ID == nil {
 			creates = append(creates, OrderService{
-				ID:             uuid.New(),
-				OrderID:        id,
-				Title:          row.Title,
-				StartDate:      row.StartDate,
-				EndDate:        row.EndDate,
-				Observations:   row.Observations,
+				ID:           uuid.New(),
+				OrderID:      id,
+				Title:        row.Title,
+				StartDate:    row.StartDate,
+				EndDate:      row.EndDate,
+				Observations: row.Observations,
 			})
 			continue
 		}
@@ -99,12 +99,12 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, in UpdateOrderDTO) (
 			return nil, fmt.Errorf("service %s is both updated and removed: %w", *row.ID, ErrServiceNotInOrder)
 		}
 		updates = append(updates, OrderService{
-			ID:             *row.ID,
-			OrderID:        id,
-			Title:          row.Title,
-			StartDate:      row.StartDate,
-			EndDate:        row.EndDate,
-			Observations:   row.Observations,
+			ID:           *row.ID,
+			OrderID:      id,
+			Title:        row.Title,
+			StartDate:    row.StartDate,
+			EndDate:      row.EndDate,
+			Observations: row.Observations,
 		})
 	}
 
@@ -136,13 +136,13 @@ func toResponseDTO(o *Order) ResponseDTO {
 	for i := range o.OrderServices {
 		row := &o.OrderServices[i]
 		svc = append(svc, OrderServiceResponse{
-			ID:             row.ID,
-			Title:          row.Title,
-			StartDate:      row.StartDate,
-			EndDate:        row.EndDate,
-			Observations:   row.Observations,
-			CreatedAt:      row.CreatedAt,
-			UpdatedAt:      row.UpdatedAt,
+			ID:           row.ID,
+			Title:        row.Title,
+			StartDate:    row.StartDate,
+			EndDate:      row.EndDate,
+			Observations: row.Observations,
+			CreatedAt:    row.CreatedAt,
+			UpdatedAt:    row.UpdatedAt,
 		})
 	}
 	return ResponseDTO{

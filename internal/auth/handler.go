@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/caiohenrique/go-api-template/internal/platform/ginbind"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
@@ -35,9 +36,8 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 // @Failure			500		{object}	ErrorResponse
 // @Router			/auth/login [post]
 func (h *Handler) Login(c *gin.Context) {
-	var in LoginDTO
-	if err := c.ShouldBindJSON(&in); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid json body"})
+	in, ok := ginbind.JSON[LoginDTO](c, "invalid json body")
+	if !ok {
 		return
 	}
 
