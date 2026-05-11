@@ -57,9 +57,22 @@ type ListResponseDTO struct {
 	pagination.Meta
 }
 
+// ListOrderServicesQueryDTO query string da listagem de serviços do pedido (paginação + filtro opcional por pedido).
+type ListOrderServicesQueryDTO struct {
+	pagination.Query
+	OrderID string `form:"order_id" validate:"omitempty,uuid"`
+}
+
+// ListOrderServicesResponseDTO é uma página de linhas de order_services.
+type ListOrderServicesResponseDTO struct {
+	Items []OrderServiceResponse `json:"items"`
+	pagination.Meta
+}
+
 // OrderServiceResponse é a visão pública de um serviço do pedido.
 type OrderServiceResponse struct {
 	ID           uuid.UUID  `json:"id"`
+	OrderID      uuid.UUID  `json:"order_id"`
 	Title        string     `json:"title"`
 	StartDate    time.Time  `json:"start_date"`
 	EndDate      *time.Time `json:"end_date,omitempty"`

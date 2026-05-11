@@ -94,6 +94,51 @@ func (s *Service) List(ctx context.Context, in ListQueryDTO) (*ListResponseDTO, 
 	}, nil
 }
 
+// ListOrderServices retorna linhas de order_services com paginação e filtro opcional por pedido.
+func (s *Service) ListOrderServices(ctx context.Context, in ListOrderServicesQueryDTO) (*ListOrderServicesResponseDTO, error) {
+	in.Query = pagination.Normalize(in.Query)
+	if err := s.validator.Struct(in); err != nil {
+		return nil, fmt.Errorf("validate list order services query: %w", err)
+	}
+
+	var orderID *uuid.UUID
+	if in.OrderID != "" {
+		id, err := uuid.Parse(in.OrderID)
+		if err != nil {
+			return nil, fmt.Errorf("parse order_id: %w", err)
+		}
+		orderID = &id
+	}
+
+	rows, total, err := s.repo.ListOrderServices(ctx, ListOrderServicesParams{
+		Query:   in.Query,
+		OrderID: orderID,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]OrderServiceResponse, 0, len(rows))
+	for i := range rows {
+		row := &rows[i]
+		items = append(items, OrderServiceResponse{
+			ID:           row.ID,
+			OrderID:      row.OrderID,
+			Title:        row.Title,
+			StartDate:    row.StartDate,
+			EndDate:      row.EndDate,
+			Observations: row.Observations,
+			CreatedAt:    row.CreatedAt,
+			UpdatedAt:    row.UpdatedAt,
+		})
+	}
+	meta := pagination.NewMeta(in.Query, total)
+	return &ListOrderServicesResponseDTO{
+		Items: items,
+		Meta:  meta,
+	}, nil
+}
+
 // Update: cabeçalho do pedido em replace total (title + opcionais como vêm no DTO; nil = NULL no banco).
 // Itens em order_services com ID viram UPDATE, sem ID viram INSERT; RemovedServiceIDs deletam na mesma transação.
 // Linhas não listadas não mudam. Em UPDATE de linha, end_date e observations nil persistem NULL.
@@ -168,6 +213,7 @@ func toResponseDTO(o *Order) ResponseDTO {
 		row := &o.OrderServices[i]
 		svc = append(svc, OrderServiceResponse{
 			ID:           row.ID,
+			OrderID:      row.OrderID,
 			Title:        row.Title,
 			StartDate:    row.StartDate,
 			EndDate:      row.EndDate,

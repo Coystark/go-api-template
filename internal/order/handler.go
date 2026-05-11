@@ -27,6 +27,7 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 
 	authed.POST("/orders", h.Create)
 	authed.GET("/orders", h.List)
+	authed.GET("/order-services", h.ListOrderServices)
 	authed.GET("/orders/:id", h.GetByID)
 	authed.PUT("/orders/:id", h.Update)
 	authed.DELETE("/orders/:id", h.Delete)
@@ -80,6 +81,34 @@ func (h *Handler) List(c *gin.Context) {
 	}
 
 	out, err := h.svc.List(c.Request.Context(), query)
+	if err != nil {
+		handleServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, out)
+}
+
+// @Summary			Listar serviços de pedidos
+// @Description		Retorna linhas de order_services com paginação. Filtro opcional `order_id` restringe ao pedido. Apenas serviços de pedidos não removidos (soft delete).
+// @Tags			order-services
+// @Produce			json
+// @Security		BearerAuth
+// @Param			page		query		int		false	"Página, começando em 1"	default(1)
+// @Param			page_size	query		int		false	"Itens por página, máximo 100"	default(20)
+// @Param			order_id	query		string	false	"UUID do pedido (filtro opcional)"
+// @Success			200			{object}	ListOrderServicesResponseDTO
+// @Failure			400			{object}	httperr.ErrorResponse
+// @Failure			401			{object}	httperr.ErrorResponse
+// @Failure			500			{object}	httperr.ErrorResponse
+// @Router			/order-services [get]
+func (h *Handler) ListOrderServices(c *gin.Context) {
+	query, ok := ginbind.Query[ListOrderServicesQueryDTO](c, "invalid list order services query")
+	if !ok {
+		return
+	}
+
+	out, err := h.svc.ListOrderServices(c.Request.Context(), query)
 	if err != nil {
 		handleServiceError(c, err)
 		return

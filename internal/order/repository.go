@@ -30,11 +30,18 @@ type ListParams struct {
 	Title string
 }
 
+// ListOrderServicesParams agrega paginação e filtro opcional por pedido.
+type ListOrderServicesParams struct {
+	pagination.Query
+	OrderID *uuid.UUID
+}
+
 // Repository define persistência de pedidos (consumido pelo Service).
 type Repository interface {
 	Create(ctx context.Context, o *Order, services []OrderService) error
 	FindByID(ctx context.Context, id uuid.UUID) (*Order, error)
 	List(ctx context.Context, in ListParams) ([]Order, int64, error)
+	ListOrderServices(ctx context.Context, in ListOrderServicesParams) ([]OrderService, int64, error)
 	Update(ctx context.Context, orderID uuid.UUID, in UpdateOrderInput) error
 	Delete(ctx context.Context, id uuid.UUID) error
 }
@@ -96,6 +103,28 @@ func (r *gormRepository) List(ctx context.Context, in ListParams) ([]Order, int6
 		return nil, 0, fmt.Errorf("list orders: %w", err)
 	}
 	return orders, total, nil
+}
+
+func (r *gormRepository) ListOrderServices(ctx context.Context, in ListOrderServicesParams) ([]OrderService, int64, error) {
+	db := r.db.WithContext(ctx).Model(&OrderService{}).
+		Joins("JOIN orders ON orders.id = order_services.order_id AND orders.deleted_at IS NULL")
+	if in.OrderID != nil {
+		db = db.Where("order_services.order_id = ?", *in.OrderID)
+	}
+
+	var total int64
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("count order services: %w", err)
+	}
+
+	var rows []OrderService
+	if err := db.Order("order_services.created_at DESC").
+		Limit(in.PageSize).
+		Offset(pagination.Offset(in.Query)).
+		Find(&rows).Error; err != nil {
+		return nil, 0, fmt.Errorf("list order services: %w", err)
+	}
+	return rows, total, nil
 }
 
 func (r *gormRepository) Update(ctx context.Context, orderID uuid.UUID, in UpdateOrderInput) error {

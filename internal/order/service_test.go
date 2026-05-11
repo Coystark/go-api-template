@@ -80,6 +80,42 @@ func (f *fakeRepo) List(ctx context.Context, in ListParams) ([]Order, int64, err
 	return orders[start:end], total, nil
 }
 
+func (f *fakeRepo) ListOrderServices(ctx context.Context, in ListOrderServicesParams) ([]OrderService, int64, error) {
+	_ = ctx
+	var rows []OrderService
+	for oid, o := range f.orders {
+		if f.isDeleted(oid) {
+			continue
+		}
+		if in.OrderID != nil && oid != *in.OrderID {
+			continue
+		}
+		for _, svc := range o.OrderServices {
+			cp := svc
+			rows = append(rows, cp)
+		}
+	}
+
+	sort.SliceStable(rows, func(i, j int) bool {
+		ci, cj := rows[i].CreatedAt, rows[j].CreatedAt
+		if !ci.Equal(cj) {
+			return ci.After(cj)
+		}
+		return rows[i].ID.String() < rows[j].ID.String()
+	})
+
+	total := int64(len(rows))
+	start := pagination.Offset(in.Query)
+	if start >= len(rows) {
+		return []OrderService{}, total, nil
+	}
+	end := start + in.PageSize
+	if end > len(rows) {
+		end = len(rows)
+	}
+	return rows[start:end], total, nil
+}
+
 func (f *fakeRepo) Update(ctx context.Context, orderID uuid.UUID, in UpdateOrderInput) error {
 	_ = ctx
 	o, ok := f.orders[orderID]
@@ -547,6 +583,143 @@ func TestService_Update_ClearsOptionalServiceFieldsWhenOmitted(t *testing.T) {
 	require.True(t, out.OrderServices[0].StartDate.Equal(testSvcStart2))
 	require.Nil(t, out.OrderServices[0].EndDate)
 	require.Nil(t, out.OrderServices[0].Observations)
+}
+
+func TestService_ListOrderServices_WithoutOrderID(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeRepo()
+	svc := NewService(repo, validator.New())
+
+	a, err := svc.Create(ctx, CreateOrderDTO{
+		Title:         "A",
+		OrderServices: []OrderServiceInput{{Title: "Sa", StartDate: testSvcStart}},
+	})
+	require.NoError(t, err)
+	b, err := svc.Create(ctx, CreateOrderDTO{
+		Title:         "B",
+		OrderServices: []OrderServiceInput{{Title: "Sb", StartDate: testSvcStart}},
+	})
+	require.NoError(t, err)
+
+	tEarly := time.Date(2026, 5, 10, 12, 0, 0, 0, time.UTC)
+	tLate := time.Date(2026, 5, 12, 12, 0, 0, 0, time.UTC)
+	repo.orders[a.ID].OrderServices[0].CreatedAt = tEarly
+	repo.orders[b.ID].OrderServices[0].CreatedAt = tLate
+
+	out, err := svc.ListOrderServices(ctx, ListOrderServicesQueryDTO{
+		Query: pagination.Query{Page: 1, PageSize: 10},
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(2), out.Total)
+	require.Len(t, out.Items, 2)
+	require.Equal(t, "Sb", out.Items[0].Title)
+	require.Equal(t, "Sa", out.Items[1].Title)
+}
+
+func TestService_ListOrderServices_WithOrderID(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeRepo()
+	svc := NewService(repo, validator.New())
+
+	a, err := svc.Create(ctx, CreateOrderDTO{
+		Title:         "A",
+		OrderServices: []OrderServiceInput{{Title: "S1", StartDate: testSvcStart}},
+	})
+	require.NoError(t, err)
+	_, err = svc.Create(ctx, CreateOrderDTO{
+		Title:         "B",
+		OrderServices: []OrderServiceInput{{Title: "S2", StartDate: testSvcStart}},
+	})
+	require.NoError(t, err)
+
+	out, err := svc.ListOrderServices(ctx, ListOrderServicesQueryDTO{
+		Query:   pagination.Query{Page: 1, PageSize: 10},
+		OrderID: a.ID.String(),
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(1), out.Total)
+	require.Len(t, out.Items, 1)
+	require.Equal(t, "S1", out.Items[0].Title)
+	require.Equal(t, a.OrderServices[0].ID, out.Items[0].ID)
+}
+
+func TestService_ListOrderServices_Paginates(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeRepo()
+	svc := NewService(repo, validator.New())
+
+	o, err := svc.Create(ctx, CreateOrderDTO{
+		Title: "O",
+		OrderServices: []OrderServiceInput{
+			{Title: "S1", StartDate: testSvcStart},
+			{Title: "S2", StartDate: testSvcStart},
+			{Title: "S3", StartDate: testSvcStart},
+		},
+	})
+	require.NoError(t, err)
+	t1 := time.Date(2026, 5, 10, 10, 0, 0, 0, time.UTC)
+	t2 := time.Date(2026, 5, 11, 10, 0, 0, 0, time.UTC)
+	t3 := time.Date(2026, 5, 12, 10, 0, 0, 0, time.UTC)
+	repo.orders[o.ID].OrderServices[0].CreatedAt = t1
+	repo.orders[o.ID].OrderServices[1].CreatedAt = t2
+	repo.orders[o.ID].OrderServices[2].CreatedAt = t3
+
+	out, err := svc.ListOrderServices(ctx, ListOrderServicesQueryDTO{
+		Query:   pagination.Query{Page: 1, PageSize: 2},
+		OrderID: o.ID.String(),
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(3), out.Total)
+	require.Len(t, out.Items, 2)
+	require.Equal(t, "S3", out.Items[0].Title)
+	require.Equal(t, "S2", out.Items[1].Title)
+
+	out, err = svc.ListOrderServices(ctx, ListOrderServicesQueryDTO{
+		Query:   pagination.Query{Page: 2, PageSize: 2},
+		OrderID: o.ID.String(),
+	})
+	require.NoError(t, err)
+	require.Len(t, out.Items, 1)
+	require.Equal(t, "S1", out.Items[0].Title)
+}
+
+func TestService_ListOrderServices_DeletedOrderExcluded(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeRepo()
+	svc := NewService(repo, validator.New())
+
+	o, err := svc.Create(ctx, CreateOrderDTO{
+		Title:         "Será removido",
+		OrderServices: []OrderServiceInput{{Title: "Sx", StartDate: testSvcStart}},
+	})
+	require.NoError(t, err)
+	require.NoError(t, svc.Delete(ctx, o.ID))
+
+	out, err := svc.ListOrderServices(ctx, ListOrderServicesQueryDTO{
+		Query: pagination.Query{Page: 1, PageSize: 10},
+	})
+	require.NoError(t, err)
+	require.Empty(t, out.Items)
+	require.Equal(t, int64(0), out.Total)
+
+	out, err = svc.ListOrderServices(ctx, ListOrderServicesQueryDTO{
+		Query:   pagination.Query{Page: 1, PageSize: 10},
+		OrderID: o.ID.String(),
+	})
+	require.NoError(t, err)
+	require.Empty(t, out.Items)
+	require.Equal(t, int64(0), out.Total)
+}
+
+func TestService_ListOrderServices_InvalidOrderID(t *testing.T) {
+	ctx := context.Background()
+	svc := NewService(newFakeRepo(), validator.New())
+
+	_, err := svc.ListOrderServices(ctx, ListOrderServicesQueryDTO{
+		Query:   pagination.Query{Page: 1, PageSize: 10},
+		OrderID: "not-a-uuid",
+	})
+	require.Error(t, err)
 }
 
 func indexByID(services []OrderServiceResponse) map[uuid.UUID]OrderServiceResponse {

@@ -41,6 +41,21 @@ definitions:
     required:
     - title
     type: object
+  order.ListOrderServicesResponseDTO:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/order.OrderServiceResponse'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
   order.ListResponseDTO:
     properties:
       items:
@@ -82,6 +97,8 @@ definitions:
       id:
         type: string
       observations:
+        type: string
+      order_id:
         type: string
       start_date:
         type: string
@@ -202,6 +219,50 @@ paths:
       summary: Login
       tags:
       - auth
+  /order-services:
+    get:
+      description: Retorna linhas de order_services com paginação. Filtro opcional
+        `order_id` restringe ao pedido. Apenas serviços de pedidos não removidos (soft
+        delete).
+      parameters:
+      - default: 1
+        description: Página, começando em 1
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Itens por página, máximo 100
+        in: query
+        name: page_size
+        type: integer
+      - description: UUID do pedido (filtro opcional)
+        in: query
+        name: order_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/order.ListOrderServicesResponseDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/httperr.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/httperr.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/httperr.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Listar serviços de pedidos
+      tags:
+      - order-services
   /orders:
     get:
       description: Retorna pedidos resumidos com paginação.
@@ -216,6 +277,14 @@ paths:
         in: query
         name: page_size
         type: integer
+      - description: Filtro parcial case-insensitive em `code` (ILIKE)
+        in: query
+        name: code
+        type: string
+      - description: Filtro parcial case-insensitive em `title` (ILIKE)
+        in: query
+        name: title
+        type: string
       produces:
       - application/json
       responses:

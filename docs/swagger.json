@@ -61,6 +61,71 @@
                 }
             }
         },
+        "/order-services": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retorna linhas de order_services com paginação. Filtro opcional `order_id` restringe ao pedido. Apenas serviços de pedidos não removidos (soft delete).",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "order-services"
+                ],
+                "summary": "Listar serviços de pedidos",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Página, começando em 1",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 20,
+                        "description": "Itens por página, máximo 100",
+                        "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "UUID do pedido (filtro opcional)",
+                        "name": "order_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/order.ListOrderServicesResponseDTO"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/httperr.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/httperr.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/httperr.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/orders": {
             "get": {
                 "security": [
@@ -89,6 +154,18 @@
                         "default": 20,
                         "description": "Itens por página, máximo 100",
                         "name": "page_size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtro parcial case-insensitive em `code` (ILIKE)",
+                        "name": "code",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtro parcial case-insensitive em `title` (ILIKE)",
+                        "name": "title",
                         "in": "query"
                     }
                 ],
@@ -516,6 +593,29 @@
                 }
             }
         },
+        "order.ListOrderServicesResponseDTO": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/order.OrderServiceResponse"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
         "order.ListResponseDTO": {
             "type": "object",
             "properties": {
@@ -577,6 +677,9 @@
                     "type": "string"
                 },
                 "observations": {
+                    "type": "string"
+                },
+                "order_id": {
                     "type": "string"
                 },
                 "start_date": {
