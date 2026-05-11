@@ -6,11 +6,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// ErrorResponse representa erro JSON da API.
-type ErrorResponse struct {
-	Error string `json:"error"`
-}
-
 // OrderServiceInput representa um serviço no corpo de create/update.
 // No update, `ID` presente indica UPDATE; ausente indica INSERT.
 // No create, `ID` é ignorado. Em UPDATE, `end_date` e `observations` omitidos ou null

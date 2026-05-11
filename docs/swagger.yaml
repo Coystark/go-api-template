@@ -1,10 +1,5 @@
 basePath: /
 definitions:
-  auth.ErrorResponse:
-    properties:
-      error:
-        type: string
-    type: object
   auth.LoginDTO:
     properties:
       email:
@@ -18,6 +13,11 @@ definitions:
   auth.TokenResponseDTO:
     properties:
       access_token:
+        type: string
+    type: object
+  httperr.ErrorResponse:
+    properties:
+      error:
         type: string
     type: object
   order.CreateOrderDTO:
@@ -40,11 +40,6 @@ definitions:
         type: string
     required:
     - title
-    type: object
-  order.ErrorResponse:
-    properties:
-      error:
-        type: string
     type: object
   order.OrderServiceInput:
     properties:
@@ -140,11 +135,6 @@ definitions:
     - email
     - password
     type: object
-  user.ErrorResponse:
-    properties:
-      error:
-        type: string
-    type: object
   user.ResponseDTO:
     properties:
       created_at:
@@ -185,15 +175,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/auth.ErrorResponse'
+            $ref: '#/definitions/httperr.ErrorResponse'
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/auth.ErrorResponse'
+            $ref: '#/definitions/httperr.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/auth.ErrorResponse'
+            $ref: '#/definitions/httperr.ErrorResponse'
       summary: Login
       tags:
       - auth
@@ -219,11 +209,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/order.ErrorResponse'
+            $ref: '#/definitions/httperr.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/order.ErrorResponse'
+            $ref: '#/definitions/httperr.ErrorResponse'
       summary: Criar pedido
       tags:
       - orders
@@ -246,15 +236,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/order.ErrorResponse'
+            $ref: '#/definitions/httperr.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/order.ErrorResponse'
+            $ref: '#/definitions/httperr.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/order.ErrorResponse'
+            $ref: '#/definitions/httperr.ErrorResponse'
       summary: Buscar pedido
       tags:
       - orders
@@ -289,15 +279,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/order.ErrorResponse'
+            $ref: '#/definitions/httperr.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/order.ErrorResponse'
+            $ref: '#/definitions/httperr.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/order.ErrorResponse'
+            $ref: '#/definitions/httperr.ErrorResponse'
       summary: Atualizar pedido
       tags:
       - orders
@@ -323,15 +313,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/user.ErrorResponse'
+            $ref: '#/definitions/httperr.ErrorResponse'
         "409":
           description: Conflict
           schema:
-            $ref: '#/definitions/user.ErrorResponse'
+            $ref: '#/definitions/httperr.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/user.ErrorResponse'
+            $ref: '#/definitions/httperr.ErrorResponse'
       summary: Criar usuário
       tags:
       - users
@@ -350,15 +340,15 @@ paths:
         "401":
           description: Unauthorized
           schema:
-            $ref: '#/definitions/user.ErrorResponse'
+            $ref: '#/definitions/httperr.ErrorResponse'
         "404":
           description: Not Found
           schema:
-            $ref: '#/definitions/user.ErrorResponse'
+            $ref: '#/definitions/httperr.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/user.ErrorResponse'
+            $ref: '#/definitions/httperr.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Usuário autenticado

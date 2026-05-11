@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/caiohenrique/go-api-template/internal/platform/ginbind"
+	"github.com/caiohenrique/go-api-template/internal/platform/httperr"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
@@ -31,9 +32,9 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 // @Produce			json
 // @Param			body	body		LoginDTO	true	"Credenciais"
 // @Success			200		{object}	TokenResponseDTO
-// @Failure			400		{object}	ErrorResponse
-// @Failure			401		{object}	ErrorResponse
-// @Failure			500		{object}	ErrorResponse
+// @Failure			400		{object}	httperr.ErrorResponse
+// @Failure			401		{object}	httperr.ErrorResponse
+// @Failure			500		{object}	httperr.ErrorResponse
 // @Router			/auth/login [post]
 func (h *Handler) Login(c *gin.Context) {
 	in, ok := ginbind.JSON[LoginDTO](c, "invalid json body")
@@ -45,25 +46,17 @@ func (h *Handler) Login(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrInvalidCredentials):
-			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "invalid credentials"})
+			httperr.WriteError(c, http.StatusUnauthorized, "invalid credentials")
 		default:
 			var valErr validator.ValidationErrors
 			if errors.As(err, &valErr) {
-				c.JSON(http.StatusBadRequest, ErrorResponse{Error: firstValidationError(valErr)})
+				httperr.WriteError(c, http.StatusBadRequest, httperr.FirstValidationError(valErr))
 				return
 			}
-			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "internal error"})
+			httperr.WriteError(c, http.StatusInternalServerError, "internal error")
 		}
 		return
 	}
 
 	c.JSON(http.StatusOK, out)
-}
-
-func firstValidationError(errs validator.ValidationErrors) string {
-	if len(errs) == 0 {
-		return "validation failed"
-	}
-	e := errs[0]
-	return e.Field() + ": invalid"
 }

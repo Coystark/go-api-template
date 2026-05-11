@@ -1,10 +1,5 @@
 package auth
 
-// ErrorResponse representa erro JSON da API.
-type ErrorResponse struct {
-	Error string `json:"error"`
-}
-
 // LoginDTO representa credenciais de login.
 type LoginDTO struct {
 	Email    string `json:"email" validate:"required,email"`

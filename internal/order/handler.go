@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/caiohenrique/go-api-template/internal/platform/ginbind"
+	"github.com/caiohenrique/go-api-template/internal/platform/httperr"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
@@ -34,8 +35,8 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, _ gin.HandlerFunc) {
 // @Produce			json
 // @Param			body	body		CreateOrderDTO	true	"Dados do pedido"
 // @Success			201		{object}	ResponseDTO
-// @Failure			400		{object}	ErrorResponse
-// @Failure			500		{object}	ErrorResponse
+// @Failure			400		{object}	httperr.ErrorResponse
+// @Failure			500		{object}	httperr.ErrorResponse
 // @Router			/orders [post]
 func (h *Handler) Create(c *gin.Context) {
 	in, ok := ginbind.JSON[CreateOrderDTO](c, "invalid json body")
@@ -58,14 +59,14 @@ func (h *Handler) Create(c *gin.Context) {
 // @Produce			json
 // @Param			id	path		string	true	"UUID do pedido"
 // @Success			200	{object}	ResponseDTO
-// @Failure			400	{object}	ErrorResponse
-// @Failure			404	{object}	ErrorResponse
-// @Failure			500	{object}	ErrorResponse
+// @Failure			400	{object}	httperr.ErrorResponse
+// @Failure			404	{object}	httperr.ErrorResponse
+// @Failure			500	{object}	httperr.ErrorResponse
 // @Router			/orders/{id} [get]
 func (h *Handler) GetByID(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		writeError(c, http.StatusBadRequest, "invalid order id")
+		httperr.WriteError(c, http.StatusBadRequest, "invalid order id")
 		return
 	}
 
@@ -86,14 +87,14 @@ func (h *Handler) GetByID(c *gin.Context) {
 // @Param			id		path		string			true	"UUID do pedido"
 // @Param			body	body		UpdateOrderDTO	true	"Corpo do pedido"
 // @Success			200		{object}	ResponseDTO
-// @Failure			400		{object}	ErrorResponse
-// @Failure			404		{object}	ErrorResponse
-// @Failure			500		{object}	ErrorResponse
+// @Failure			400		{object}	httperr.ErrorResponse
+// @Failure			404		{object}	httperr.ErrorResponse
+// @Failure			500		{object}	httperr.ErrorResponse
 // @Router			/orders/{id} [put]
 func (h *Handler) Update(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		writeError(c, http.StatusBadRequest, "invalid order id")
+		httperr.WriteError(c, http.StatusBadRequest, "invalid order id")
 		return
 	}
 
@@ -114,40 +115,15 @@ func (h *Handler) Update(c *gin.Context) {
 func handleServiceError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, ErrNotFound):
-		writeError(c, http.StatusNotFound, "order not found")
+		httperr.WriteError(c, http.StatusNotFound, "order not found")
 	case errors.Is(err, ErrServiceNotInOrder):
-		writeError(c, http.StatusBadRequest, "order service does not belong to order")
+		httperr.WriteError(c, http.StatusBadRequest, "order service does not belong to order")
 	default:
 		var valErr validator.ValidationErrors
 		if errors.As(err, &valErr) {
-			writeError(c, http.StatusBadRequest, firstValidationError(valErr))
+			httperr.WriteError(c, http.StatusBadRequest, httperr.FirstValidationError(valErr))
 			return
 		}
-		writeError(c, http.StatusInternalServerError, "internal error")
+		httperr.WriteError(c, http.StatusInternalServerError, "internal error")
 	}
-}
-
-func firstValidationError(errs validator.ValidationErrors) string {
-	if len(errs) == 0 {
-		return "validation failed"
-	}
-	e := errs[0]
-	return e.Field() + ": " + tagMessage(e.Tag())
-}
-
-func tagMessage(tag string) string {
-	switch tag {
-	case "required":
-		return "required"
-	case "email":
-		return "must be a valid email"
-	case "min":
-		return "too short"
-	default:
-		return "invalid"
-	}
-}
-
-func writeError(c *gin.Context, status int, msg string) {
-	c.JSON(status, ErrorResponse{Error: msg})
 }

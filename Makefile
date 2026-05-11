@@ -6,7 +6,7 @@ export
 # Requer: go install github.com/swaggo/swag/cmd/swag@latest (swag no PATH).
 # Gera docs/ para go build funcionar sem passo extra; commitar docs/ após mudanças nas rotas.
 swagger:
-	swag init -g main.go -d cmd/api,internal/auth,internal/user,internal/order -o docs
+	swag init -g main.go -d cmd/api,internal/auth,internal/user,internal/order,internal/platform/httperr -o docs
 
 DB_URL ?= postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=$(DB_SSLMODE)
 

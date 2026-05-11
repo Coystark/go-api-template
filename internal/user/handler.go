@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/caiohenrique/go-api-template/internal/platform/ginbind"
+	"github.com/caiohenrique/go-api-template/internal/platform/httperr"
 	"github.com/caiohenrique/go-api-template/internal/platform/requestctx"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -34,9 +35,9 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 // @Produce			json
 // @Param			body	body		CreateDTO	true	"Dados do usuário"
 // @Success			201		{object}	ResponseDTO
-// @Failure			400		{object}	ErrorResponse
-// @Failure			409		{object}	ErrorResponse
-// @Failure			500		{object}	ErrorResponse
+// @Failure			400		{object}	httperr.ErrorResponse
+// @Failure			409		{object}	httperr.ErrorResponse
+// @Failure			500		{object}	httperr.ErrorResponse
 // @Router			/users [post]
 func (h *Handler) Create(c *gin.Context) {
 	in, ok := ginbind.JSON[CreateDTO](c, "invalid json body")
@@ -60,14 +61,14 @@ func (h *Handler) Create(c *gin.Context) {
 // @Produce			json
 // @Security		BearerAuth
 // @Success			200	{object}	ResponseDTO
-// @Failure			401	{object}	ErrorResponse
-// @Failure			404	{object}	ErrorResponse
-// @Failure			500	{object}	ErrorResponse
+// @Failure			401	{object}	httperr.ErrorResponse
+// @Failure			404	{object}	httperr.ErrorResponse
+// @Failure			500	{object}	httperr.ErrorResponse
 // @Router			/users/me [get]
 func (h *Handler) Me(c *gin.Context) {
 	id, ok := requestctx.UserID(c.Request.Context())
 	if !ok || id == uuid.Nil {
-		writeError(c, http.StatusUnauthorized, "unauthorized")
+		httperr.WriteError(c, http.StatusUnauthorized, "unauthorized")
 		return
 	}
 
@@ -83,40 +84,15 @@ func (h *Handler) Me(c *gin.Context) {
 func handleServiceError(c *gin.Context, err error) {
 	switch {
 	case errors.Is(err, ErrNotFound):
-		writeError(c, http.StatusNotFound, "user not found")
+		httperr.WriteError(c, http.StatusNotFound, "user not found")
 	case errors.Is(err, ErrEmailAlreadyExists):
-		writeError(c, http.StatusConflict, "email already exists")
+		httperr.WriteError(c, http.StatusConflict, "email already exists")
 	default:
 		var valErr validator.ValidationErrors
 		if errors.As(err, &valErr) {
-			writeError(c, http.StatusBadRequest, firstValidationError(valErr))
+			httperr.WriteError(c, http.StatusBadRequest, httperr.FirstValidationError(valErr))
 			return
 		}
-		writeError(c, http.StatusInternalServerError, "internal error")
+		httperr.WriteError(c, http.StatusInternalServerError, "internal error")
 	}
-}
-
-func firstValidationError(errs validator.ValidationErrors) string {
-	if len(errs) == 0 {
-		return "validation failed"
-	}
-	e := errs[0]
-	return e.Field() + ": " + tagMessage(e.Tag())
-}
-
-func tagMessage(tag string) string {
-	switch tag {
-	case "required":
-		return "required"
-	case "email":
-		return "must be a valid email"
-	case "min":
-		return "too short"
-	default:
-		return "invalid"
-	}
-}
-
-func writeError(c *gin.Context, status int, msg string) {
-	c.JSON(status, ErrorResponse{Error: msg})
 }
