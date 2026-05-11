@@ -2,20 +2,26 @@ package order
 
 import (
 	"context"
+	"sort"
 	"testing"
 	"time"
 
+	"github.com/caiohenrique/go-api-template/internal/platform/pagination"
 	"github.com/caiohenrique/go-api-template/internal/platform/validator"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 )
 
 type fakeRepo struct {
-	orders map[uuid.UUID]*Order
+	orders  map[uuid.UUID]*Order
+	deleted map[uuid.UUID]struct{}
 }
 
 func newFakeRepo() *fakeRepo {
-	return &fakeRepo{orders: make(map[uuid.UUID]*Order)}
+	return &fakeRepo{
+		orders:  make(map[uuid.UUID]*Order),
+		deleted: make(map[uuid.UUID]struct{}),
+	}
 }
 
 func (f *fakeRepo) Create(ctx context.Context, o *Order, services []OrderService) error {
@@ -29,7 +35,7 @@ func (f *fakeRepo) Create(ctx context.Context, o *Order, services []OrderService
 func (f *fakeRepo) FindByID(ctx context.Context, id uuid.UUID) (*Order, error) {
 	_ = ctx
 	o, ok := f.orders[id]
-	if !ok {
+	if !ok || f.isDeleted(id) {
 		return nil, ErrNotFound
 	}
 	cp := *o
@@ -37,10 +43,38 @@ func (f *fakeRepo) FindByID(ctx context.Context, id uuid.UUID) (*Order, error) {
 	return &cp, nil
 }
 
+func (f *fakeRepo) List(ctx context.Context, query pagination.Query) ([]Order, int64, error) {
+	_ = ctx
+	orders := make([]Order, 0, len(f.orders))
+	for id, o := range f.orders {
+		if f.isDeleted(id) {
+			continue
+		}
+		cp := *o
+		cp.OrderServices = nil
+		orders = append(orders, cp)
+	}
+
+	sort.SliceStable(orders, func(i, j int) bool {
+		return orders[i].CreatedAt.After(orders[j].CreatedAt)
+	})
+
+	total := int64(len(orders))
+	start := pagination.Offset(query)
+	if start >= len(orders) {
+		return []Order{}, total, nil
+	}
+	end := start + query.PageSize
+	if end > len(orders) {
+		end = len(orders)
+	}
+	return orders[start:end], total, nil
+}
+
 func (f *fakeRepo) Update(ctx context.Context, orderID uuid.UUID, in UpdateOrderInput) error {
 	_ = ctx
 	o, ok := f.orders[orderID]
-	if !ok {
+	if !ok || f.isDeleted(orderID) {
 		return ErrNotFound
 	}
 
@@ -74,6 +108,20 @@ func (f *fakeRepo) Update(ctx context.Context, orderID uuid.UUID, in UpdateOrder
 	}
 
 	return nil
+}
+
+func (f *fakeRepo) Delete(ctx context.Context, id uuid.UUID) error {
+	_ = ctx
+	if _, ok := f.orders[id]; !ok || f.isDeleted(id) {
+		return ErrNotFound
+	}
+	f.deleted[id] = struct{}{}
+	return nil
+}
+
+func (f *fakeRepo) isDeleted(id uuid.UUID) bool {
+	_, ok := f.deleted[id]
+	return ok
 }
 
 func indexOfService(services []OrderService, id uuid.UUID) int {
@@ -140,6 +188,102 @@ func TestService_Create_EmptyServices(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.Empty(t, out.OrderServices)
+}
+
+func TestService_List_PaginatesAndSummarizes(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeRepo()
+	svc := NewService(repo, validator.New())
+
+	first, err := svc.Create(ctx, CreateOrderDTO{
+		Title:         "Primeiro",
+		OrderServices: []OrderServiceInput{{Title: "S1", StartDate: testSvcStart}},
+	})
+	require.NoError(t, err)
+	second, err := svc.Create(ctx, CreateOrderDTO{
+		Title:         "Segundo",
+		OrderServices: []OrderServiceInput{{Title: "S2", StartDate: testSvcStart}},
+	})
+	require.NoError(t, err)
+	third, err := svc.Create(ctx, CreateOrderDTO{
+		Title:         "Terceiro",
+		OrderServices: []OrderServiceInput{{Title: "S3", StartDate: testSvcStart}},
+	})
+	require.NoError(t, err)
+
+	repo.orders[first.ID].CreatedAt = time.Date(2026, 5, 11, 9, 0, 0, 0, time.UTC)
+	repo.orders[second.ID].CreatedAt = time.Date(2026, 5, 12, 9, 0, 0, 0, time.UTC)
+	repo.orders[third.ID].CreatedAt = time.Date(2026, 5, 13, 9, 0, 0, 0, time.UTC)
+
+	out, err := svc.List(ctx, ListQueryDTO{Page: 1, PageSize: 2})
+	require.NoError(t, err)
+	require.Equal(t, 1, out.Page)
+	require.Equal(t, 2, out.PageSize)
+	require.Equal(t, int64(3), out.Total)
+	require.Equal(t, 2, out.TotalPages)
+	require.Len(t, out.Items, 2)
+	require.Equal(t, third.ID, out.Items[0].ID)
+	require.Equal(t, second.ID, out.Items[1].ID)
+	require.Empty(t, out.Items[0].OrderServices)
+	require.Empty(t, out.Items[1].OrderServices)
+
+	out, err = svc.List(ctx, ListQueryDTO{Page: 2, PageSize: 2})
+	require.NoError(t, err)
+	require.Len(t, out.Items, 1)
+	require.Equal(t, first.ID, out.Items[0].ID)
+	require.Empty(t, out.Items[0].OrderServices)
+}
+
+func TestService_List_DefaultsAndCapsPageSize(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeRepo()
+	svc := NewService(repo, validator.New())
+
+	out, err := svc.List(ctx, ListQueryDTO{PageSize: 500})
+	require.NoError(t, err)
+	require.Equal(t, 1, out.Page)
+	require.Equal(t, 100, out.PageSize)
+	require.Equal(t, int64(0), out.Total)
+	require.Equal(t, 0, out.TotalPages)
+}
+
+func TestService_List_InvalidPageFails(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeRepo()
+	svc := NewService(repo, validator.New())
+
+	_, err := svc.List(ctx, ListQueryDTO{Page: -1, PageSize: 20})
+	require.Error(t, err)
+}
+
+func TestService_Delete_SoftDeletesOrder(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeRepo()
+	svc := NewService(repo, validator.New())
+
+	created, err := svc.Create(ctx, CreateOrderDTO{
+		Title:         "Pedido",
+		OrderServices: []OrderServiceInput{{Title: "S1", StartDate: testSvcStart}},
+	})
+	require.NoError(t, err)
+
+	require.NoError(t, svc.Delete(ctx, created.ID))
+
+	_, err = svc.GetByID(ctx, created.ID)
+	require.ErrorIs(t, err, ErrNotFound)
+
+	list, err := svc.List(ctx, ListQueryDTO{})
+	require.NoError(t, err)
+	require.Empty(t, list.Items)
+}
+
+func TestService_Delete_NotFound(t *testing.T) {
+	ctx := context.Background()
+	repo := newFakeRepo()
+	svc := NewService(repo, validator.New())
+
+	err := svc.Delete(ctx, uuid.New())
+	require.ErrorIs(t, err, ErrNotFound)
 }
 
 func TestService_Update_PartialUpsert(t *testing.T) {

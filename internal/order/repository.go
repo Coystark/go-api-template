@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/caiohenrique/go-api-template/internal/platform/pagination"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -26,7 +27,9 @@ type UpdateOrderInput struct {
 type Repository interface {
 	Create(ctx context.Context, o *Order, services []OrderService) error
 	FindByID(ctx context.Context, id uuid.UUID) (*Order, error)
+	List(ctx context.Context, query pagination.Query) ([]Order, int64, error)
 	Update(ctx context.Context, orderID uuid.UUID, in UpdateOrderInput) error
+	Delete(ctx context.Context, id uuid.UUID) error
 }
 
 type gormRepository struct {
@@ -62,6 +65,23 @@ func (r *gormRepository) FindByID(ctx context.Context, id uuid.UUID) (*Order, er
 		return nil, fmt.Errorf("find order by id: %w", err)
 	}
 	return &o, nil
+}
+
+func (r *gormRepository) List(ctx context.Context, query pagination.Query) ([]Order, int64, error) {
+	var total int64
+	db := r.db.WithContext(ctx).Model(&Order{})
+	if err := db.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("count orders: %w", err)
+	}
+
+	var orders []Order
+	if err := db.Order("created_at DESC").
+		Limit(query.PageSize).
+		Offset(pagination.Offset(query)).
+		Find(&orders).Error; err != nil {
+		return nil, 0, fmt.Errorf("list orders: %w", err)
+	}
+	return orders, total, nil
 }
 
 func (r *gormRepository) Update(ctx context.Context, orderID uuid.UUID, in UpdateOrderInput) error {
@@ -118,4 +138,15 @@ func (r *gormRepository) Update(ctx context.Context, orderID uuid.UUID, in Updat
 
 		return nil
 	})
+}
+
+func (r *gormRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	res := r.db.WithContext(ctx).Delete(&Order{}, "id = ?", id)
+	if res.Error != nil {
+		return fmt.Errorf("delete order: %w", res.Error)
+	}
+	if res.RowsAffected == 0 {
+		return ErrNotFound
+	}
+	return nil
 }

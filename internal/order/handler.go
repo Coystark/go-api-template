@@ -26,8 +26,10 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 	authed.Use(authMiddleware)
 
 	authed.POST("/orders", h.Create)
+	authed.GET("/orders", h.List)
 	authed.GET("/orders/:id", h.GetByID)
 	authed.PUT("/orders/:id", h.Update)
+	authed.DELETE("/orders/:id", h.Delete)
 }
 
 // @Summary			Criar pedido
@@ -57,6 +59,33 @@ func (h *Handler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, out)
 }
 
+// @Summary			Listar pedidos
+// @Description		Retorna pedidos resumidos com paginação.
+// @Tags			orders
+// @Produce			json
+// @Security		BearerAuth
+// @Param			page		query		int	false	"Página, começando em 1"	default(1)
+// @Param			page_size	query		int	false	"Itens por página, máximo 100"	default(20)
+// @Success			200			{object}	ListResponseDTO
+// @Failure			400			{object}	httperr.ErrorResponse
+// @Failure			401			{object}	httperr.ErrorResponse
+// @Failure			500			{object}	httperr.ErrorResponse
+// @Router			/orders [get]
+func (h *Handler) List(c *gin.Context) {
+	query, ok := ginbind.Pagination(c)
+	if !ok {
+		return
+	}
+
+	out, err := h.svc.List(c.Request.Context(), query)
+	if err != nil {
+		handleServiceError(c, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, out)
+}
+
 // @Summary			Buscar pedido
 // @Description		Retorna um pedido por ID com seus serviços.
 // @Tags			orders
@@ -83,6 +112,33 @@ func (h *Handler) GetByID(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, out)
+}
+
+// @Summary			Remover pedido
+// @Description		Remove logicamente um pedido.
+// @Tags			orders
+// @Produce			json
+// @Security		BearerAuth
+// @Param			id	path	string	true	"UUID do pedido"
+// @Success			204
+// @Failure			400	{object}	httperr.ErrorResponse
+// @Failure			401	{object}	httperr.ErrorResponse
+// @Failure			404	{object}	httperr.ErrorResponse
+// @Failure			500	{object}	httperr.ErrorResponse
+// @Router			/orders/{id} [delete]
+func (h *Handler) Delete(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		httperr.WriteError(c, http.StatusBadRequest, "invalid order id")
+		return
+	}
+
+	if err := h.svc.Delete(c.Request.Context(), id); err != nil {
+		handleServiceError(c, err)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 // @Summary			Atualizar pedido

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 // Order é o modelo persistido no banco.
@@ -16,6 +17,7 @@ type Order struct {
 	ConvertedAt   *time.Time
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
+	DeletedAt     gorm.DeletedAt `gorm:"index"`
 	OrderServices []OrderService `gorm:"foreignKey:OrderID"`
 }
 

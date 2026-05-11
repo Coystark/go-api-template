@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/caiohenrique/go-api-template/internal/platform/pagination"
 	"github.com/caiohenrique/go-api-template/internal/platform/validator"
 	"github.com/google/uuid"
 )
@@ -68,6 +69,30 @@ func (s *Service) GetByID(ctx context.Context, id uuid.UUID) (*ResponseDTO, erro
 	return &out, nil
 }
 
+// List retorna pedidos resumidos com paginação.
+func (s *Service) List(ctx context.Context, in ListQueryDTO) (*ListResponseDTO, error) {
+	query := pagination.Normalize(in)
+	if err := s.validator.Struct(query); err != nil {
+		return nil, fmt.Errorf("validate list query: %w", err)
+	}
+
+	orders, total, err := s.repo.List(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]ResponseDTO, 0, len(orders))
+	for i := range orders {
+		items = append(items, toResponseDTO(&orders[i]))
+	}
+
+	meta := pagination.NewMeta(query, total)
+	return &ListResponseDTO{
+		Items: items,
+		Meta:  meta,
+	}, nil
+}
+
 // Update: cabeçalho do pedido em replace total (title + opcionais como vêm no DTO; nil = NULL no banco).
 // Itens em order_services com ID viram UPDATE, sem ID viram INSERT; RemovedServiceIDs deletam na mesma transação.
 // Linhas não listadas não mudam. Em UPDATE de linha, end_date e observations nil persistem NULL.
@@ -129,6 +154,11 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, in UpdateOrderDTO) (
 	}
 	out := toResponseDTO(stored)
 	return &out, nil
+}
+
+// Delete remove logicamente um pedido.
+func (s *Service) Delete(ctx context.Context, id uuid.UUID) error {
+	return s.repo.Delete(ctx, id)
 }
 
 func toResponseDTO(o *Order) ResponseDTO {

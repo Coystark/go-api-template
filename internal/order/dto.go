@@ -3,6 +3,7 @@ package order
 import (
 	"time"
 
+	"github.com/caiohenrique/go-api-template/internal/platform/pagination"
 	"github.com/google/uuid"
 )
 
@@ -41,6 +42,15 @@ type UpdateOrderDTO struct {
 	ConvertedAt       *time.Time          `json:"converted_at,omitempty"`
 	OrderServices     []OrderServiceInput `json:"order_services" validate:"dive"`
 	RemovedServiceIDs []uuid.UUID         `json:"removed_service_ids"`
+}
+
+// ListQueryDTO representa parâmetros de paginação para listagem de pedidos.
+type ListQueryDTO = pagination.Query
+
+// ListResponseDTO representa uma página de pedidos.
+type ListResponseDTO struct {
+	Items []ResponseDTO `json:"items"`
+	pagination.Meta
 }
 
 // OrderServiceResponse é a visão pública de um serviço do pedido.
