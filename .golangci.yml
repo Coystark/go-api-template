@@ -4,36 +4,9 @@ run:
   timeout: 5m
 
 linters:
-  default: none
-  enable:
-    - errcheck
-    - govet
-    - staticcheck
-    - unused
-    - revive
-    - gosec
-    - bodyclose
-    - sqlclosecheck
-    - errorlint
-  settings:
-    revive:
-      rules:
-        - name: exported
-          severity: warning
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+  default: standard
 
 formatters:
   enable:
     - gofmt
     - goimports
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
