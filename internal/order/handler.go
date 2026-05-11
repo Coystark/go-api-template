@@ -7,7 +7,6 @@ import (
 	"github.com/caiohenrique/go-api-template/internal/platform/ginbind"
 	"github.com/caiohenrique/go-api-template/internal/platform/httperr"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
@@ -119,11 +118,6 @@ func handleServiceError(c *gin.Context, err error) {
 	case errors.Is(err, ErrServiceNotInOrder):
 		httperr.WriteError(c, http.StatusBadRequest, "order service does not belong to order")
 	default:
-		var valErr validator.ValidationErrors
-		if errors.As(err, &valErr) {
-			httperr.WriteError(c, http.StatusBadRequest, httperr.FirstValidationError(valErr))
-			return
-		}
-		httperr.WriteError(c, http.StatusInternalServerError, "internal error")
+		httperr.WriteValidationOrInternal(c, err)
 	}
 }

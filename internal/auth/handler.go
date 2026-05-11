@@ -7,7 +7,6 @@ import (
 	"github.com/caiohenrique/go-api-template/internal/platform/ginbind"
 	"github.com/caiohenrique/go-api-template/internal/platform/httperr"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 )
 
 // Handler expõe endpoints HTTP de autenticação.
@@ -48,12 +47,7 @@ func (h *Handler) Login(c *gin.Context) {
 		case errors.Is(err, ErrInvalidCredentials):
 			httperr.WriteError(c, http.StatusUnauthorized, "invalid credentials")
 		default:
-			var valErr validator.ValidationErrors
-			if errors.As(err, &valErr) {
-				httperr.WriteError(c, http.StatusBadRequest, httperr.FirstValidationError(valErr))
-				return
-			}
-			httperr.WriteError(c, http.StatusInternalServerError, "internal error")
+			httperr.WriteValidationOrInternal(c, err)
 		}
 		return
 	}

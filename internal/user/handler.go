@@ -8,7 +8,6 @@ import (
 	"github.com/caiohenrique/go-api-template/internal/platform/httperr"
 	"github.com/caiohenrique/go-api-template/internal/platform/requestctx"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
@@ -88,11 +87,6 @@ func handleServiceError(c *gin.Context, err error) {
 	case errors.Is(err, ErrEmailAlreadyExists):
 		httperr.WriteError(c, http.StatusConflict, "email already exists")
 	default:
-		var valErr validator.ValidationErrors
-		if errors.As(err, &valErr) {
-			httperr.WriteError(c, http.StatusBadRequest, httperr.FirstValidationError(valErr))
-			return
-		}
-		httperr.WriteError(c, http.StatusInternalServerError, "internal error")
+		httperr.WriteValidationOrInternal(c, err)
 	}
 }
