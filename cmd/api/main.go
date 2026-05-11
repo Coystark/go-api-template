@@ -1,7 +1,7 @@
 // @title						go-api-template API
 // @version						1.0
 // @description					API HTTP do template. Em produção, ajuste o host conforme o deployment.
-// @host						${HOST}
+// @host						localhost:8080
 // @BasePath					/
 // @securityDefinitions.apikey	BearerAuth
 // @in							header
@@ -17,9 +17,9 @@ import (
 	"os/signal"
 	"syscall"
 
-	_ "github.com/caiohenrique/go-api-template/docs"
-
+	"github.com/caiohenrique/go-api-template/docs"
 	"github.com/caiohenrique/go-api-template/internal/auth"
+	"github.com/caiohenrique/go-api-template/internal/order"
 	"github.com/caiohenrique/go-api-template/internal/platform/config"
 	"github.com/caiohenrique/go-api-template/internal/platform/database"
 	"github.com/caiohenrique/go-api-template/internal/platform/logger"
@@ -34,6 +34,13 @@ func main() {
 	if err != nil {
 		slog.Error("load config", "error", err)
 		os.Exit(1)
+	}
+
+	docs.SwaggerInfo.Host = cfg.SwaggerSpecHost()
+	if cfg.SwaggerHTTPS {
+		docs.SwaggerInfo.Schemes = []string{"https"}
+	} else {
+		docs.SwaggerInfo.Schemes = []string{"http"}
 	}
 
 	log := logger.New(cfg.LogLevel)
@@ -73,12 +80,16 @@ func main() {
 	userSvc := user.NewService(userRepo, val, asynqClient)
 	userHandler := user.NewHandler(userSvc)
 
+	orderRepo := order.NewRepository(db)
+	orderSvc := order.NewService(orderRepo, val)
+	orderHandler := order.NewHandler(orderSvc)
+
 	tokenMgr := auth.NewTokenManager(cfg.JWTSecret, jwtTTL)
 	authSvc := auth.NewService(userRepo, tokenMgr, val)
 	authHandler := auth.NewHandler(authSvc)
 	authMw := auth.NewMiddleware(tokenMgr)
 
-	srv := server.New(log, userHandler, authHandler, authMw)
+	srv := server.New(log, userHandler, orderHandler, authHandler, authMw)
 	addr := ":" + cfg.AppPort
 
 	sigCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

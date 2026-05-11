@@ -24,6 +24,9 @@ type Config struct {
 	AppPort  string `env:"APP_PORT" envDefault:"8080"`
 	LogLevel string `env:"LOG_LEVEL" envDefault:"info"`
 
+	SwaggerHost  string `env:"SWAGGER_HOST"`
+	SwaggerHTTPS bool   `env:"SWAGGER_HTTPS" envDefault:"false"`
+
 	GormDebug string `env:"GORM_DEBUG" envDefault:"false"`
 
 	ShutdownTimeoutRaw string `env:"SHUTDOWN_TIMEOUT" envDefault:"10s"`
@@ -78,4 +81,12 @@ func (c *Config) ShutdownTimeout() (time.Duration, error) {
 // GormDebugEnabled indica se o modo debug do GORM deve ser ativado.
 func (c *Config) GormDebugEnabled() bool {
 	return c.GormDebug == "true" || c.GormDebug == "1"
+}
+
+// SwaggerSpecHost retorna o campo host do Swagger (sem esquema).
+func (c *Config) SwaggerSpecHost() string {
+	if c.SwaggerHost != "" {
+		return c.SwaggerHost
+	}
+	return fmt.Sprintf("localhost:%s", c.AppPort)
 }

@@ -20,6 +20,66 @@ definitions:
       access_token:
         type: string
     type: object
+  order.CreateOrderDTO:
+    properties:
+      order_services:
+        items:
+          $ref: '#/definitions/order.OrderServiceInput'
+        type: array
+      title:
+        type: string
+    required:
+    - title
+    type: object
+  order.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  order.OrderServiceInput:
+    properties:
+      title:
+        type: string
+    required:
+    - title
+    type: object
+  order.OrderServiceResponse:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  order.ResponseDTO:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: string
+      order_services:
+        items:
+          $ref: '#/definitions/order.OrderServiceResponse'
+        type: array
+      title:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  order.UpdateOrderDTO:
+    properties:
+      order_services:
+        items:
+          $ref: '#/definitions/order.OrderServiceInput'
+        type: array
+      title:
+        type: string
+    required:
+    - title
+    type: object
   user.CreateDTO:
     properties:
       email:
@@ -47,7 +107,7 @@ definitions:
       updated_at:
         type: string
     type: object
-host: ${HOST}
+host: localhost:8080
 info:
   contact: {}
   description: API HTTP do template. Em produção, ajuste o host conforme o deployment.
@@ -88,6 +148,105 @@ paths:
       summary: Login
       tags:
       - auth
+  /orders:
+    post:
+      consumes:
+      - application/json
+      description: Cria um pedido com serviços aninhados.
+      parameters:
+      - description: Dados do pedido
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/order.CreateOrderDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/order.ResponseDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/order.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/order.ErrorResponse'
+      summary: Criar pedido
+      tags:
+      - orders
+  /orders/{id}:
+    get:
+      description: Retorna um pedido por ID com seus serviços.
+      parameters:
+      - description: UUID do pedido
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/order.ResponseDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/order.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/order.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/order.ErrorResponse'
+      summary: Buscar pedido
+      tags:
+      - orders
+    put:
+      consumes:
+      - application/json
+      description: Atualiza título e substitui a lista de serviços do pedido.
+      parameters:
+      - description: UUID do pedido
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Dados do pedido
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/order.UpdateOrderDTO'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/order.ResponseDTO'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/order.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/order.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/order.ErrorResponse'
+      summary: Atualizar pedido
+      tags:
+      - orders
   /users:
     post:
       consumes:

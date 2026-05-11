@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/caiohenrique/go-api-template/internal/auth"
+	"github.com/caiohenrique/go-api-template/internal/order"
 	"github.com/caiohenrique/go-api-template/internal/user"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -25,6 +26,7 @@ type Server struct {
 func New(
 	log *slog.Logger,
 	userHandler *user.Handler,
+	orderHandler *order.Handler,
 	authHandler *auth.Handler,
 	authMiddleware gin.HandlerFunc,
 ) *Server {
@@ -38,6 +40,7 @@ func New(
 
 	root := r.Group("")
 	userHandler.RegisterRoutes(root, authMiddleware)
+	orderHandler.RegisterRoutes(root, authMiddleware)
 	authHandler.RegisterRoutes(root)
 
 	return &Server{engine: r, log: log}
