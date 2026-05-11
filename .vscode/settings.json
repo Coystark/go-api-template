@@ -1,6 +1,6 @@
 {
   "go.lintTool": "golangci-lint",
-  "go.lintOnSave": "file",
+  "go.lintOnSave": "package",
   "go.formatTool": "goimports",
   "go.useLanguageServer": true,
   "go.toolsManagement.autoUpdate": true,

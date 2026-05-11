@@ -1,3 +1,12 @@
+// @title						go-api-template API
+// @version						1.0
+// @description					API HTTP do template. Em produção, ajuste o host conforme o deployment.
+// @host						${HOST}
+// @BasePath					/
+// @securityDefinitions.apikey	BearerAuth
+// @in							header
+// @name						Authorization
+// @description					Digite "Bearer {token}"
 package main
 
 import (
@@ -7,6 +16,8 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+
+	_ "github.com/caiohenrique/go-api-template/docs"
 
 	"github.com/caiohenrique/go-api-template/internal/auth"
 	"github.com/caiohenrique/go-api-template/internal/platform/config"

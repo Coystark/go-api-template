@@ -26,11 +26,17 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 	rg.GET("/users/me", authMiddleware, h.Me)
 }
 
-type errorResponse struct {
-	Error string `json:"error"`
-}
-
-// Create trata POST /users.
+// @Summary			Criar usuário
+// @Description		Registra um novo usuário.
+// @Tags			users
+// @Accept			json
+// @Produce			json
+// @Param			body	body		CreateDTO	true	"Dados do usuário"
+// @Success			201		{object}	ResponseDTO
+// @Failure			400		{object}	ErrorResponse
+// @Failure			409		{object}	ErrorResponse
+// @Failure			500		{object}	ErrorResponse
+// @Router			/users [post]
 func (h *Handler) Create(c *gin.Context) {
 	var in CreateDTO
 	if err := c.ShouldBindJSON(&in); err != nil {
@@ -47,7 +53,17 @@ func (h *Handler) Create(c *gin.Context) {
 	c.JSON(http.StatusCreated, out)
 }
 
-// Me trata GET /users/me.
+// @Summary			Usuário autenticado
+// @Description		Retorna o perfil do usuário do token JWT.
+// @Tags			users
+// @Accept			json
+// @Produce			json
+// @Security		BearerAuth
+// @Success			200	{object}	ResponseDTO
+// @Failure			401	{object}	ErrorResponse
+// @Failure			404	{object}	ErrorResponse
+// @Failure			500	{object}	ErrorResponse
+// @Router			/users/me [get]
 func (h *Handler) Me(c *gin.Context) {
 	id, ok := requestctx.UserID(c.Request.Context())
 	if !ok || id == uuid.Nil {
@@ -102,5 +118,5 @@ func tagMessage(tag string) string {
 }
 
 func writeError(c *gin.Context, status int, msg string) {
-	c.JSON(status, errorResponse{Error: msg})
+	c.JSON(status, ErrorResponse{Error: msg})
 }

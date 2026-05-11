@@ -11,6 +11,8 @@ import (
 	"github.com/caiohenrique/go-api-template/internal/auth"
 	"github.com/caiohenrique/go-api-template/internal/user"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 // Server encapsula o engine Gin e o ciclo de vida HTTP.
@@ -31,6 +33,8 @@ func New(
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(requestLogger(log))
+
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	root := r.Group("")
 	userHandler.RegisterRoutes(root, authMiddleware)

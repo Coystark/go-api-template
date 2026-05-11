@@ -6,6 +6,11 @@ import (
 	"github.com/google/uuid"
 )
 
+// ErrorResponse representa erro JSON da API.
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
 // CreateDTO representa entrada para criação de usuário.
 type CreateDTO struct {
 	Email    string `json:"email" validate:"required,email"`

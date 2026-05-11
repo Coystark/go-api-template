@@ -23,15 +23,21 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup) {
 	rg.POST("/auth/login", h.Login)
 }
 
-type errorResponse struct {
-	Error string `json:"error"`
-}
-
-// Login trata POST /auth/login.
+// @Summary			Login
+// @Description		Autentica credenciais e retorna JWT.
+// @Tags			auth
+// @Accept			json
+// @Produce			json
+// @Param			body	body		LoginDTO	true	"Credenciais"
+// @Success			200		{object}	TokenResponseDTO
+// @Failure			400		{object}	ErrorResponse
+// @Failure			401		{object}	ErrorResponse
+// @Failure			500		{object}	ErrorResponse
+// @Router			/auth/login [post]
 func (h *Handler) Login(c *gin.Context) {
 	var in LoginDTO
 	if err := c.ShouldBindJSON(&in); err != nil {
-		c.JSON(http.StatusBadRequest, errorResponse{Error: "invalid json body"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid json body"})
 		return
 	}
 
@@ -39,14 +45,14 @@ func (h *Handler) Login(c *gin.Context) {
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrInvalidCredentials):
-			c.JSON(http.StatusUnauthorized, errorResponse{Error: "invalid credentials"})
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Error: "invalid credentials"})
 		default:
 			var valErr validator.ValidationErrors
 			if errors.As(err, &valErr) {
-				c.JSON(http.StatusBadRequest, errorResponse{Error: firstValidationError(valErr)})
+				c.JSON(http.StatusBadRequest, ErrorResponse{Error: firstValidationError(valErr)})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, errorResponse{Error: "internal error"})
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "internal error"})
 		}
 		return
 	}
