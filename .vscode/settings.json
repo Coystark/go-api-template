@@ -1,14 +1,14 @@
 {
   "go.lintTool": "golangci-lint",
-  "go.lintFlags": ["--fast"],
-  "go.lintOnSave": "package",
+  "go.lintOnSave": "file",
   "go.formatTool": "goimports",
   "go.useLanguageServer": true,
+  "go.toolsManagement.autoUpdate": true,
   "[go]": {
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "golang.go",
     "editor.codeActionsOnSave": {
-      "source.organizeImports": "explicit"
+      "source.organizeImports": "always"
     }
   }
 }

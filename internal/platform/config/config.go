@@ -21,7 +21,7 @@ type Config struct {
 	JWTSecret        string `env:"JWT_SECRET" envDefault:""`
 	JWTExpirationRaw string `env:"JWT_EXPIRATION" envDefault:"24h"`
 
-	AppPort string `env:"APP_PORT" envDefault:"8080"`
+	AppPort  string `env:"APP_PORT" envDefault:"8080"`
 	LogLevel string `env:"LOG_LEVEL" envDefault:"info"`
 
 	GormDebug string `env:"GORM_DEBUG" envDefault:"false"`

@@ -1,26 +1,39 @@
+version: "2"
+
 run:
   timeout: 5m
 
 linters:
+  default: none
   enable:
     - errcheck
-    - gosimple
     - govet
     - staticcheck
     - unused
-    - gofmt
-    - goimports
     - revive
     - gosec
     - bodyclose
     - sqlclosecheck
     - errorlint
+  settings:
+    revive:
+      rules:
+        - name: exported
+          severity: warning
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 
-linters-settings:
-  revive:
-    rules:
-      - name: exported
-        severity: warning
-
-issues:
-  exclude-use-default: false
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

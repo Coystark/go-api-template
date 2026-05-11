@@ -9,6 +9,23 @@ Boilerplate REST em Go (1.22+) com Gin, GORM, PostgreSQL, Redis/asynq, JWT e mig
 - [golang-migrate](https://github.com/golang-migrate/migrate) instalado no PATH (`migrate`) para os alvos `migrate-*` do Makefile
 - Opcional: [golangci-lint](https://golangci-lint.run/) para `make lint`
 
+## VS Code / Cursor
+
+Instale a extensão oficial do Go:
+
+- [golang.go](https://marketplace.visualstudio.com/items?itemName=golang.Go)
+
+Na primeira abertura do projeto, a extensão vai pedir para instalar as ferramentas Go necessárias. Aceite todas. As principais são:
+
+| Ferramenta      | Função                                                  |
+| --------------- | ------------------------------------------------------- |
+| `gopls`         | Language server (autocomplete, navegação, erros inline) |
+| `goimports`     | Formatação + organização de imports no save             |
+| `golangci-lint` | Linter agregado (rode também via `make lint`)           |
+| `dlv`           | Debugger                                                |
+
+O arquivo `.vscode/settings.json` já está configurado para formatar e lint ao salvar.
+
 ## Primeira execução
 
 Na raiz do repositório:
