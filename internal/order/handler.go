@@ -21,10 +21,13 @@ func NewHandler(svc *Service) *Handler {
 }
 
 // RegisterRoutes registra rotas sob o router informado.
-func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, _ gin.HandlerFunc) {
-	rg.POST("/orders", h.Create)
-	rg.GET("/orders/:id", h.GetByID)
-	rg.PUT("/orders/:id", h.Update)
+func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
+	authed := rg.Group("")
+	authed.Use(authMiddleware)
+
+	authed.POST("/orders", h.Create)
+	authed.GET("/orders/:id", h.GetByID)
+	authed.PUT("/orders/:id", h.Update)
 }
 
 // @Summary			Criar pedido
@@ -32,9 +35,11 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, _ gin.HandlerFunc) {
 // @Tags			orders
 // @Accept			json
 // @Produce			json
+// @Security		BearerAuth
 // @Param			body	body		CreateOrderDTO	true	"Dados do pedido"
 // @Success			201		{object}	ResponseDTO
 // @Failure			400		{object}	httperr.ErrorResponse
+// @Failure			401		{object}	httperr.ErrorResponse
 // @Failure			500		{object}	httperr.ErrorResponse
 // @Router			/orders [post]
 func (h *Handler) Create(c *gin.Context) {
@@ -56,9 +61,11 @@ func (h *Handler) Create(c *gin.Context) {
 // @Description		Retorna um pedido por ID com seus serviços.
 // @Tags			orders
 // @Produce			json
+// @Security		BearerAuth
 // @Param			id	path		string	true	"UUID do pedido"
 // @Success			200	{object}	ResponseDTO
 // @Failure			400	{object}	httperr.ErrorResponse
+// @Failure			401	{object}	httperr.ErrorResponse
 // @Failure			404	{object}	httperr.ErrorResponse
 // @Failure			500	{object}	httperr.ErrorResponse
 // @Router			/orders/{id} [get]
@@ -83,10 +90,12 @@ func (h *Handler) GetByID(c *gin.Context) {
 // @Tags			orders
 // @Accept			json
 // @Produce			json
+// @Security		BearerAuth
 // @Param			id		path		string			true	"UUID do pedido"
 // @Param			body	body		UpdateOrderDTO	true	"Corpo do pedido"
 // @Success			200		{object}	ResponseDTO
 // @Failure			400		{object}	httperr.ErrorResponse
+// @Failure			401		{object}	httperr.ErrorResponse
 // @Failure			404		{object}	httperr.ErrorResponse
 // @Failure			500		{object}	httperr.ErrorResponse
 // @Router			/orders/{id} [put]
