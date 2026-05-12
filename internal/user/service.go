@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/caiohenrique/go-api-template/internal/platform/id"
 	"github.com/caiohenrique/go-api-template/internal/platform/queue"
 	"github.com/caiohenrique/go-api-template/internal/platform/validator"
 	"github.com/google/uuid"
@@ -53,8 +54,13 @@ func (s *Service) Create(ctx context.Context, in CreateDTO) (*ResponseDTO, error
 		return nil, fmt.Errorf("hash password: %w", err)
 	}
 
+	uid, err := id.New()
+	if err != nil {
+		return nil, fmt.Errorf("generate user id: %w", err)
+	}
+
 	u := &User{
-		ID:           uuid.New(),
+		ID:           uid,
 		Email:        in.Email,
 		PasswordHash: string(hash),
 	}

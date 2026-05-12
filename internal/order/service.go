@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/caiohenrique/go-api-template/internal/platform/id"
 	"github.com/caiohenrique/go-api-template/internal/platform/pagination"
 	"github.com/caiohenrique/go-api-template/internal/platform/validator"
 	"github.com/google/uuid"
@@ -26,7 +27,10 @@ func (s *Service) Create(ctx context.Context, in CreateOrderDTO) (*ResponseDTO, 
 		return nil, fmt.Errorf("validate create dto: %w", err)
 	}
 
-	orderID := uuid.New()
+	orderID, err := id.New()
+	if err != nil {
+		return nil, fmt.Errorf("generate order id: %w", err)
+	}
 	o := &Order{
 		ID:          orderID,
 		Title:       in.Title,
@@ -37,8 +41,12 @@ func (s *Service) Create(ctx context.Context, in CreateOrderDTO) (*ResponseDTO, 
 	}
 	services := make([]OrderService, 0, len(in.OrderServices))
 	for _, row := range in.OrderServices {
+		svcID, err := id.New()
+		if err != nil {
+			return nil, fmt.Errorf("generate order service id: %w", err)
+		}
 		services = append(services, OrderService{
-			ID:           uuid.New(),
+			ID:           svcID,
 			OrderID:      orderID,
 			Title:        row.Title,
 			StartDate:    row.StartDate,
@@ -142,7 +150,7 @@ func (s *Service) ListOrderServices(ctx context.Context, in ListOrderServicesQue
 // Update: cabeçalho do pedido em replace total (title + opcionais como vêm no DTO; nil = NULL no banco).
 // Itens em order_services com ID viram UPDATE, sem ID viram INSERT; RemovedServiceIDs deletam na mesma transação.
 // Linhas não listadas não mudam. Em UPDATE de linha, end_date e observations nil persistem NULL.
-func (s *Service) Update(ctx context.Context, id uuid.UUID, in UpdateOrderDTO) (*ResponseDTO, error) {
+func (s *Service) Update(ctx context.Context, orderID uuid.UUID, in UpdateOrderDTO) (*ResponseDTO, error) {
 	if err := s.validator.Struct(in); err != nil {
 		return nil, fmt.Errorf("validate update dto: %w", err)
 	}
@@ -156,9 +164,13 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, in UpdateOrderDTO) (
 	updates := make([]OrderService, 0, len(in.OrderServices))
 	for _, row := range in.OrderServices {
 		if row.ID == nil {
+			svcID, err := id.New()
+			if err != nil {
+				return nil, fmt.Errorf("generate order service id: %w", err)
+			}
 			creates = append(creates, OrderService{
-				ID:           uuid.New(),
-				OrderID:      id,
+				ID:           svcID,
+				OrderID:      orderID,
 				Title:        row.Title,
 				StartDate:    row.StartDate,
 				EndDate:      row.EndDate,
@@ -171,7 +183,7 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, in UpdateOrderDTO) (
 		}
 		updates = append(updates, OrderService{
 			ID:           *row.ID,
-			OrderID:      id,
+			OrderID:      orderID,
 			Title:        row.Title,
 			StartDate:    row.StartDate,
 			EndDate:      row.EndDate,
@@ -190,11 +202,11 @@ func (s *Service) Update(ctx context.Context, id uuid.UUID, in UpdateOrderDTO) (
 		RemoveIDs:   in.RemovedServiceIDs,
 	}
 
-	if err := s.repo.Update(ctx, id, repoIn); err != nil {
+	if err := s.repo.Update(ctx, orderID, repoIn); err != nil {
 		return nil, fmt.Errorf("persist order update: %w", err)
 	}
 
-	stored, err := s.repo.FindByID(ctx, id)
+	stored, err := s.repo.FindByID(ctx, orderID)
 	if err != nil {
 		return nil, fmt.Errorf("load order after update: %w", err)
 	}

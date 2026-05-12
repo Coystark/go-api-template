@@ -93,7 +93,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "UUID do pedido (filtro opcional)",
+                        "description": "UUID v7 do pedido (filtro opcional)",
                         "name": "order_id",
                         "in": "query"
                     }
@@ -270,7 +270,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "UUID do pedido",
+                        "description": "UUID v7 do pedido",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -329,7 +329,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "UUID do pedido",
+                        "description": "UUID v7 do pedido",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -394,7 +394,7 @@
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "UUID do pedido",
+                        "description": "UUID v7 do pedido",
                         "name": "id",
                         "in": "path",
                         "required": true

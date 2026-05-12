@@ -366,7 +366,7 @@ func TestService_Delete_NotFound(t *testing.T) {
 	repo := newFakeRepo()
 	svc := NewService(repo, validator.New())
 
-	err := svc.Delete(ctx, uuid.New())
+	err := svc.Delete(ctx, uuid.Must(uuid.NewV7()))
 	require.ErrorIs(t, err, ErrNotFound)
 }
 
@@ -532,7 +532,7 @@ func TestService_Update_RemoveUnknownIDFails(t *testing.T) {
 
 	_, err = svc.Update(ctx, created.ID, UpdateOrderDTO{
 		Title:             "Pedido",
-		RemovedServiceIDs: []uuid.UUID{uuid.New()},
+		RemovedServiceIDs: []uuid.UUID{uuid.Must(uuid.NewV7())},
 	})
 	require.ErrorIs(t, err, ErrServiceNotInOrder)
 }
@@ -542,7 +542,7 @@ func TestService_Update_NotFound(t *testing.T) {
 	repo := newFakeRepo()
 	svc := NewService(repo, validator.New())
 
-	_, err := svc.Update(ctx, uuid.New(), UpdateOrderDTO{
+	_, err := svc.Update(ctx, uuid.Must(uuid.NewV7()), UpdateOrderDTO{
 		Title: "X",
 		OrderServices: []OrderServiceInput{
 			{Title: "Y", StartDate: testSvcStart},

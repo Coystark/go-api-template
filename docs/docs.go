@@ -99,7 +99,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "UUID do pedido (filtro opcional)",
+                        "description": "UUID v7 do pedido (filtro opcional)",
                         "name": "order_id",
                         "in": "query"
                     }
@@ -276,7 +276,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "UUID do pedido",
+                        "description": "UUID v7 do pedido",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -335,7 +335,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "UUID do pedido",
+                        "description": "UUID v7 do pedido",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -400,7 +400,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "UUID do pedido",
+                        "description": "UUID v7 do pedido",
                         "name": "id",
                         "in": "path",
                         "required": true

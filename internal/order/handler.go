@@ -96,7 +96,7 @@ func (h *Handler) List(c *gin.Context) {
 // @Security		BearerAuth
 // @Param			page		query		int		false	"Página, começando em 1"	default(1)
 // @Param			page_size	query		int		false	"Itens por página, máximo 100"	default(20)
-// @Param			order_id	query		string	false	"UUID do pedido (filtro opcional)"
+// @Param			order_id	query		string	false	"UUID v7 do pedido (filtro opcional)"
 // @Success			200			{object}	ListOrderServicesResponseDTO
 // @Failure			400			{object}	httperr.ErrorResponse
 // @Failure			401			{object}	httperr.ErrorResponse
@@ -122,7 +122,7 @@ func (h *Handler) ListOrderServices(c *gin.Context) {
 // @Tags			orders
 // @Produce			json
 // @Security		BearerAuth
-// @Param			id	path		string	true	"UUID do pedido"
+// @Param			id	path		string	true	"UUID v7 do pedido"
 // @Success			200	{object}	ResponseDTO
 // @Failure			400	{object}	httperr.ErrorResponse
 // @Failure			401	{object}	httperr.ErrorResponse
@@ -150,7 +150,7 @@ func (h *Handler) GetByID(c *gin.Context) {
 // @Tags			orders
 // @Produce			json
 // @Security		BearerAuth
-// @Param			id	path	string	true	"UUID do pedido"
+// @Param			id	path	string	true	"UUID v7 do pedido"
 // @Success			204
 // @Failure			400	{object}	httperr.ErrorResponse
 // @Failure			401	{object}	httperr.ErrorResponse
@@ -178,7 +178,7 @@ func (h *Handler) Delete(c *gin.Context) {
 // @Accept			json
 // @Produce			json
 // @Security		BearerAuth
-// @Param			id		path		string			true	"UUID do pedido"
+// @Param			id		path		string			true	"UUID v7 do pedido"
 // @Param			body	body		UpdateOrderDTO	true	"Corpo do pedido"
 // @Success			200		{object}	ResponseDTO
 // @Failure			400		{object}	httperr.ErrorResponse

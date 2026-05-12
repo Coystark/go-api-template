@@ -235,7 +235,7 @@ paths:
         in: query
         name: page_size
         type: integer
-      - description: UUID do pedido (filtro opcional)
+      - description: UUID v7 do pedido (filtro opcional)
         in: query
         name: order_id
         type: string
@@ -348,7 +348,7 @@ paths:
     delete:
       description: Remove logicamente um pedido.
       parameters:
-      - description: UUID do pedido
+      - description: UUID v7 do pedido
         in: path
         name: id
         required: true
@@ -382,7 +382,7 @@ paths:
     get:
       description: Retorna um pedido por ID com seus serviços.
       parameters:
-      - description: UUID do pedido
+      - description: UUID v7 do pedido
         in: path
         name: id
         required: true
@@ -425,7 +425,7 @@ paths:
         Em UPDATE de linha, `end_date` e `observations` omitidos ou `null` gravam
         NULL — reenvie para mantê-los.'
       parameters:
-      - description: UUID do pedido
+      - description: UUID v7 do pedido
         in: path
         name: id
         required: true
