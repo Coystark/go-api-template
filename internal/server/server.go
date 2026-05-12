@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/caiohenrique/go-api-template/internal/auth"
-	"github.com/caiohenrique/go-api-template/internal/order"
-	"github.com/caiohenrique/go-api-template/internal/user"
+	"github.com/caiohenrique/go-api-template/internal/features/auth"
+	"github.com/caiohenrique/go-api-template/internal/features/order"
+	"github.com/caiohenrique/go-api-template/internal/features/user"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"

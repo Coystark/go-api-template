@@ -123,4 +123,4 @@ make lint
 
 ## Detalhe de arquitetura
 
-O ID do usuário autenticado é colocado no `context.Context` da requisição em [`internal/platform/requestctx`](internal/platform/requestctx) (evita ciclo de importação entre `auth` e `user`). O middleware em `internal/auth` grava esse valor após validar o JWT.
+O ID do usuário autenticado é colocado no `context.Context` da requisição em [`internal/platform/requestctx`](internal/platform/requestctx) (evita ciclo de importação entre `auth` e `user`). O middleware em `internal/features/auth` grava esse valor após validar o JWT.

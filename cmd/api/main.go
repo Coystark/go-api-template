@@ -18,15 +18,15 @@ import (
 	"syscall"
 
 	"github.com/caiohenrique/go-api-template/docs"
-	"github.com/caiohenrique/go-api-template/internal/auth"
-	"github.com/caiohenrique/go-api-template/internal/order"
+	"github.com/caiohenrique/go-api-template/internal/features/auth"
+	"github.com/caiohenrique/go-api-template/internal/features/order"
 	"github.com/caiohenrique/go-api-template/internal/platform/config"
 	"github.com/caiohenrique/go-api-template/internal/platform/database"
 	"github.com/caiohenrique/go-api-template/internal/platform/logger"
 	"github.com/caiohenrique/go-api-template/internal/platform/queue"
 	"github.com/caiohenrique/go-api-template/internal/platform/validator"
 	"github.com/caiohenrique/go-api-template/internal/server"
-	"github.com/caiohenrique/go-api-template/internal/user"
+	"github.com/caiohenrique/go-api-template/internal/features/user"
 )
 
 func main() {

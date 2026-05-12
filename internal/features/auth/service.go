@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/caiohenrique/go-api-template/internal/platform/validator"
-	"github.com/caiohenrique/go-api-template/internal/user"
+	"github.com/caiohenrique/go-api-template/internal/features/user"
 	"golang.org/x/crypto/bcrypt"
 )
 
