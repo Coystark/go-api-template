@@ -1,9 +1,9 @@
 package order
 
-import "errors"
+import "github.com/caiohenrique/go-api-template/internal/platform/apperr"
 
 // ErrNotFound indica que o pedido não existe.
-var ErrNotFound = errors.New("order not found")
+var ErrNotFound = apperr.NotFound("order not found")
 
 // ErrServiceNotInOrder indica que um order_service referenciado não pertence ao pedido alvo.
-var ErrServiceNotInOrder = errors.New("order service does not belong to order")
+var ErrServiceNotInOrder = apperr.BadRequest("order service does not belong to order")

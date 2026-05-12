@@ -1,10 +1,10 @@
 package user
 
-import "errors"
+import "github.com/caiohenrique/go-api-template/internal/platform/apperr"
 
 var (
 	// ErrNotFound indica que o usuário não existe.
-	ErrNotFound = errors.New("user not found")
+	ErrNotFound = apperr.NotFound("user not found")
 	// ErrEmailAlreadyExists indica email duplicado.
-	ErrEmailAlreadyExists = errors.New("email already exists")
+	ErrEmailAlreadyExists = apperr.Conflict("email already exists")
 )

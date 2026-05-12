@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/caiohenrique/go-api-template/internal/platform/ginbind"
@@ -43,12 +42,7 @@ func (h *Handler) Login(c *gin.Context) {
 
 	out, err := h.svc.Login(c.Request.Context(), in)
 	if err != nil {
-		switch {
-		case errors.Is(err, ErrInvalidCredentials):
-			httperr.WriteError(c, http.StatusUnauthorized, "invalid credentials")
-		default:
-			httperr.WriteValidationOrInternal(c, err)
-		}
+		httperr.WriteServiceError(c, err)
 		return
 	}
 

@@ -1,7 +1,6 @@
 package user
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/caiohenrique/go-api-template/internal/platform/ginbind"
@@ -46,7 +45,7 @@ func (h *Handler) Create(c *gin.Context) {
 
 	out, err := h.svc.Create(c.Request.Context(), in)
 	if err != nil {
-		handleServiceError(c, err)
+		httperr.WriteServiceError(c, err)
 		return
 	}
 
@@ -73,20 +72,9 @@ func (h *Handler) Me(c *gin.Context) {
 
 	out, err := h.svc.GetByID(c.Request.Context(), id)
 	if err != nil {
-		handleServiceError(c, err)
+		httperr.WriteServiceError(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, out)
-}
-
-func handleServiceError(c *gin.Context, err error) {
-	switch {
-	case errors.Is(err, ErrNotFound):
-		httperr.WriteError(c, http.StatusNotFound, "user not found")
-	case errors.Is(err, ErrEmailAlreadyExists):
-		httperr.WriteError(c, http.StatusConflict, "email already exists")
-	default:
-		httperr.WriteValidationOrInternal(c, err)
-	}
 }

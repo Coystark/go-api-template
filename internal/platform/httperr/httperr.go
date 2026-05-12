@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/caiohenrique/go-api-template/internal/platform/apperr"
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 )
@@ -27,6 +28,15 @@ func WriteValidationOrInternal(c *gin.Context, err error) {
 		return
 	}
 	WriteError(c, http.StatusInternalServerError, "internal error")
+}
+
+func WriteServiceError(c *gin.Context, err error) {
+	var ae *apperr.AppError
+	if errors.As(err, &ae) {
+		WriteError(c, ae.Status, ae.Message)
+		return
+	}
+	WriteValidationOrInternal(c, err)
 }
 
 // FirstValidationError returns a short message for the first validation error.
