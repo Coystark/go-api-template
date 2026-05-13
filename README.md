@@ -1,10 +1,10 @@
 # Go API template
 
-Boilerplate REST em Go (1.22+) com Gin, GORM, PostgreSQL, Redis/asynq, JWT e migrations. Organização por feature em `internal/`.
+Boilerplate REST em Go (1.23+) com Gin, GORM, PostgreSQL, Redis/asynq, JWT e migrations. O código de negócio segue **Ports & Adapters (hexagonal)** com **package-by-feature**: cada feature em `internal/features/<nome>/` contém `domain/` (entidades puras), `app/` (casos de uso, ports e tipos `Input`/`View`) e `adapters/` (HTTP Gin, GORM, JWT, etc.). O wiring de implementações concretas fica em `cmd/api` e `cmd/worker`.
 
 ## Pré-requisitos
 
-- Go 1.22 ou superior
+- Go 1.23 ou superior
 - Docker e Docker Compose (para Postgres e Redis locais)
 - [golang-migrate](https://github.com/golang-migrate/migrate) instalado no PATH (`migrate`) para os alvos `migrate-*` do Makefile
 - Opcional: [golangci-lint](https://golangci-lint.run/) para `make lint`
@@ -121,6 +121,16 @@ make test
 make lint
 ```
 
-## Detalhe de arquitetura
+## Arquitetura
 
-O ID do usuário autenticado é colocado no `context.Context` da requisição em [`internal/platform/requestctx`](internal/platform/requestctx) (evita ciclo de importação entre `auth` e `user`). O middleware em `internal/features/auth` grava esse valor após validar o JWT.
+Cada feature (`user`, `auth`, `order`) está em `internal/features/<feature>/` com três camadas em subpastas:
+
+- **`domain/`** — entidades e erros de domínio, sem frameworks.
+- **`app/`** — casos de uso, interfaces (ports) e tipos de entrada/saída do use case. Convenção de nomes: sufixo **`Input`** para entrada (ex.: `CreateUserInput`, `LoginInput`) e **`View`** para leitura (ex.: `UserView`, `OrderView`). Não usamos o termo “DTO” para esses tipos: eles modelam o caso de uso; quando o JSON HTTP é idêntico, as mesmas structs carregam tags `json:` / `validate:` / `form:` para binding direto nos handlers.
+- **`adapters/`** — implementações: `adapters/http` (Gin, Swagger), `adapters/repo` (GORM), `adapters/jwt`, etc.
+
+Features não importam o `app` ou `adapters` de outras features; comunicação cruzada usa ports (ex.: `auth/app` declara `UserFinder`, satisfeito pelo repositório de `user`). `auth/app` pode importar `user/domain` apenas para tipar retornos do port.
+
+Utilitários compartilhados ficam em [`internal/platform`](internal/platform) (config, logger, `apperr`, paginação, fila asynq, bcrypt genérico, etc.).
+
+O ID do usuário autenticado é colocado no `context.Context` da requisição em [`internal/platform/requestctx`](internal/platform/requestctx). O middleware em `internal/features/auth/adapters/http` grava esse valor após validar o JWT.

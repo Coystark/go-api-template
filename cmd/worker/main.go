@@ -11,7 +11,7 @@ import (
 
 	"github.com/caiohenrique/go-api-template/internal/platform/config"
 	"github.com/caiohenrique/go-api-template/internal/platform/logger"
-	"github.com/caiohenrique/go-api-template/internal/platform/queue"
+	asynqq "github.com/caiohenrique/go-api-template/internal/platform/queue/asynq"
 	"github.com/hibiken/asynq"
 )
 
@@ -25,9 +25,9 @@ func main() {
 	log := logger.New(cfg.LogLevel)
 	slog.SetDefault(log)
 
-	srv := queue.NewServer(cfg.RedisAddr)
+	srv := asynqq.NewServer(cfg.RedisAddr)
 	mux := asynq.NewServeMux()
-	mux.HandleFunc(queue.TaskTypeWelcomeEmail, handleWelcomeEmail)
+	mux.HandleFunc(asynqq.TaskTypeWelcomeEmail, handleWelcomeEmail)
 
 	sigCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -58,7 +58,7 @@ func main() {
 }
 
 func handleWelcomeEmail(ctx context.Context, t *asynq.Task) error {
-	var p queue.WelcomeEmailPayload
+	var p asynqq.WelcomeEmailPayload
 	if err := json.Unmarshal(t.Payload(), &p); err != nil {
 		return err
 	}

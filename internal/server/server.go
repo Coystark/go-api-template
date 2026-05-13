@@ -8,26 +8,26 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/caiohenrique/go-api-template/internal/features/auth"
-	"github.com/caiohenrique/go-api-template/internal/features/order"
-	"github.com/caiohenrique/go-api-template/internal/features/user"
+	authhttp "github.com/caiohenrique/go-api-template/internal/features/auth/adapters/http"
+	orderhttp "github.com/caiohenrique/go-api-template/internal/features/order/adapters/http"
+	userhttp "github.com/caiohenrique/go-api-template/internal/features/user/adapters/http"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-// Server encapsula o engine Gin e o ciclo de vida HTTP.
+// Server encapsulates the Gin engine and HTTP lifecycle.
 type Server struct {
 	engine *gin.Engine
 	log    *slog.Logger
 }
 
-// New monta middlewares globais e registra rotas das features.
+// New mounts global middlewares and registers feature routes.
 func New(
 	log *slog.Logger,
-	userHandler *user.Handler,
-	orderHandler *order.Handler,
-	authHandler *auth.Handler,
+	userHandler *userhttp.Handler,
+	orderHandler *orderhttp.Handler,
+	authHandler *authhttp.Handler,
 	authMiddleware gin.HandlerFunc,
 ) *Server {
 	gin.SetMode(gin.ReleaseMode)
@@ -60,7 +60,7 @@ func requestLogger(log *slog.Logger) gin.HandlerFunc {
 	}
 }
 
-// Run inicia o HTTP server e encerra com shutdown gracioso quando ctx é cancelado.
+// Run starts the HTTP server and shuts down gracefully when ctx is canceled.
 func (s *Server) Run(ctx context.Context, addr string, shutdownTimeout time.Duration) error {
 	httpSrv := &http.Server{
 		Addr:              addr,

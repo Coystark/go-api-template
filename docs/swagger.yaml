@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  auth.LoginDTO:
+  authapp.LoginInput:
     properties:
       email:
         type: string
@@ -10,7 +10,7 @@ definitions:
     - email
     - password
     type: object
-  auth.TokenResponseDTO:
+  authapp.TokenView:
     properties:
       access_token:
         type: string
@@ -20,7 +20,7 @@ definitions:
       error:
         type: string
     type: object
-  order.CreateOrderDTO:
+  orderapp.CreateOrderInput:
     properties:
       code:
         minLength: 1
@@ -29,7 +29,7 @@ definitions:
         type: string
       order_services:
         items:
-          $ref: '#/definitions/order.OrderServiceInput'
+          $ref: '#/definitions/orderapp.OrderServiceItem'
         type: array
       sent_at:
         type: string
@@ -41,37 +41,7 @@ definitions:
     required:
     - title
     type: object
-  order.ListOrderServicesResponseDTO:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/order.OrderServiceResponse'
-        type: array
-      page:
-        type: integer
-      page_size:
-        type: integer
-      total:
-        type: integer
-      total_pages:
-        type: integer
-    type: object
-  order.ListResponseDTO:
-    properties:
-      items:
-        items:
-          $ref: '#/definitions/order.ResponseDTO'
-        type: array
-      page:
-        type: integer
-      page_size:
-        type: integer
-      total:
-        type: integer
-      total_pages:
-        type: integer
-    type: object
-  order.OrderServiceInput:
+  orderapp.OrderServiceItem:
     properties:
       end_date:
         type: string
@@ -88,7 +58,7 @@ definitions:
     - start_date
     - title
     type: object
-  order.OrderServiceResponse:
+  orderapp.OrderServiceView:
     properties:
       created_at:
         type: string
@@ -107,7 +77,22 @@ definitions:
       updated_at:
         type: string
     type: object
-  order.ResponseDTO:
+  orderapp.OrderServicesPage:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/orderapp.OrderServiceView'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  orderapp.OrderView:
     properties:
       code:
         type: string
@@ -119,7 +104,7 @@ definitions:
         type: string
       order_services:
         items:
-          $ref: '#/definitions/order.OrderServiceResponse'
+          $ref: '#/definitions/orderapp.OrderServiceView'
         type: array
       sent_at:
         type: string
@@ -130,7 +115,22 @@ definitions:
       updated_at:
         type: string
     type: object
-  order.UpdateOrderDTO:
+  orderapp.OrdersPage:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/orderapp.OrderView'
+        type: array
+      page:
+        type: integer
+      page_size:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  orderapp.UpdateOrderInput:
     properties:
       code:
         minLength: 1
@@ -139,7 +139,7 @@ definitions:
         type: string
       order_services:
         items:
-          $ref: '#/definitions/order.OrderServiceInput'
+          $ref: '#/definitions/orderapp.OrderServiceItem'
         type: array
       removed_service_ids:
         items:
@@ -156,7 +156,7 @@ definitions:
     required:
     - title
     type: object
-  user.CreateDTO:
+  userapp.CreateUserInput:
     properties:
       email:
         type: string
@@ -167,7 +167,7 @@ definitions:
     - email
     - password
     type: object
-  user.ResponseDTO:
+  userapp.UserView:
     properties:
       created_at:
         type: string
@@ -196,14 +196,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/auth.LoginDTO'
+          $ref: '#/definitions/authapp.LoginInput'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/auth.TokenResponseDTO'
+            $ref: '#/definitions/authapp.TokenView'
         "400":
           description: Bad Request
           schema:
@@ -245,7 +245,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/order.ListOrderServicesResponseDTO'
+            $ref: '#/definitions/orderapp.OrderServicesPage'
         "400":
           description: Bad Request
           schema:
@@ -291,7 +291,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/order.ListResponseDTO'
+            $ref: '#/definitions/orderapp.OrdersPage'
         "400":
           description: Bad Request
           schema:
@@ -319,14 +319,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/order.CreateOrderDTO'
+          $ref: '#/definitions/orderapp.CreateOrderInput'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/order.ResponseDTO'
+            $ref: '#/definitions/orderapp.OrderView'
         "400":
           description: Bad Request
           schema:
@@ -393,7 +393,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/order.ResponseDTO'
+            $ref: '#/definitions/orderapp.OrderView'
         "400":
           description: Bad Request
           schema:
@@ -435,14 +435,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/order.UpdateOrderDTO'
+          $ref: '#/definitions/orderapp.UpdateOrderInput'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/order.ResponseDTO'
+            $ref: '#/definitions/orderapp.OrderView'
         "400":
           description: Bad Request
           schema:
@@ -475,14 +475,14 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/user.CreateDTO'
+          $ref: '#/definitions/userapp.CreateUserInput'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/user.ResponseDTO'
+            $ref: '#/definitions/userapp.UserView'
         "400":
           description: Bad Request
           schema:
@@ -509,7 +509,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/user.ResponseDTO'
+            $ref: '#/definitions/userapp.UserView'
         "401":
           description: Unauthorized
           schema:

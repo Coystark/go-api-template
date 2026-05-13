@@ -18,15 +18,22 @@ import (
 	"syscall"
 
 	"github.com/caiohenrique/go-api-template/docs"
-	"github.com/caiohenrique/go-api-template/internal/features/auth"
-	"github.com/caiohenrique/go-api-template/internal/features/order"
+	authhttp "github.com/caiohenrique/go-api-template/internal/features/auth/adapters/http"
+	authjwt "github.com/caiohenrique/go-api-template/internal/features/auth/adapters/jwt"
+	authapp "github.com/caiohenrique/go-api-template/internal/features/auth/app"
+	orderhttp "github.com/caiohenrique/go-api-template/internal/features/order/adapters/http"
+	orderrepo "github.com/caiohenrique/go-api-template/internal/features/order/adapters/repo"
+	orderapp "github.com/caiohenrique/go-api-template/internal/features/order/app"
+	userhttp "github.com/caiohenrique/go-api-template/internal/features/user/adapters/http"
+	userrepo "github.com/caiohenrique/go-api-template/internal/features/user/adapters/repo"
+	userapp "github.com/caiohenrique/go-api-template/internal/features/user/app"
 	"github.com/caiohenrique/go-api-template/internal/platform/config"
+	bcryptadapter "github.com/caiohenrique/go-api-template/internal/platform/crypto/bcrypt"
 	"github.com/caiohenrique/go-api-template/internal/platform/database"
 	"github.com/caiohenrique/go-api-template/internal/platform/logger"
-	"github.com/caiohenrique/go-api-template/internal/platform/queue"
+	asynqq "github.com/caiohenrique/go-api-template/internal/platform/queue/asynq"
 	"github.com/caiohenrique/go-api-template/internal/platform/validator"
 	"github.com/caiohenrique/go-api-template/internal/server"
-	"github.com/caiohenrique/go-api-template/internal/features/user"
 )
 
 func main() {
@@ -69,25 +76,28 @@ func main() {
 	}()
 
 	val := validator.New()
-	asynqClient := queue.NewClient(cfg.RedisAddr)
+	asynqClient := asynqq.NewClient(cfg.RedisAddr)
 	defer func() {
 		if err := asynqClient.Close(); err != nil {
 			log.Error("close asynq client", "error", err)
 		}
 	}()
 
-	userRepo := user.NewRepository(db)
-	userSvc := user.NewService(userRepo, val, asynqClient)
-	userHandler := user.NewHandler(userSvc)
+	userRepo := userrepo.NewRepository(db)
+	mailer := asynqq.NewMailer(asynqClient)
+	hasher := bcryptadapter.New()
+	userSvc := userapp.NewService(userRepo, val, mailer, hasher)
+	userHandler := userhttp.NewHandler(userSvc)
 
-	orderRepo := order.NewRepository(db)
-	orderSvc := order.NewService(orderRepo, val)
-	orderHandler := order.NewHandler(orderSvc)
+	orderRepo := orderrepo.NewRepository(db)
+	orderSvc := orderapp.NewService(orderRepo, val)
+	orderHandler := orderhttp.NewHandler(orderSvc)
 
-	tokenMgr := auth.NewTokenManager(cfg.JWTSecret, jwtTTL)
-	authSvc := auth.NewService(userRepo, tokenMgr, val)
-	authHandler := auth.NewHandler(authSvc)
-	authMw := auth.NewMiddleware(tokenMgr)
+	issuer := authjwt.NewIssuer(cfg.JWTSecret, jwtTTL)
+	parser := authjwt.NewParser(cfg.JWTSecret)
+	authSvc := authapp.NewService(userRepo, issuer, hasher, val)
+	authHandler := authhttp.NewHandler(authSvc)
+	authMw := authhttp.NewMiddleware(parser)
 
 	srv := server.New(log, userHandler, orderHandler, authHandler, authMw)
 	addr := ":" + cfg.AppPort

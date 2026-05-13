@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/auth.LoginDTO"
+                            "$ref": "#/definitions/authapp.LoginInput"
                         }
                     }
                 ],
@@ -43,7 +43,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/auth.TokenResponseDTO"
+                            "$ref": "#/definitions/authapp.TokenView"
                         }
                     },
                     "400": {
@@ -108,7 +108,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/order.ListOrderServicesResponseDTO"
+                            "$ref": "#/definitions/orderapp.OrderServicesPage"
                         }
                     },
                     "400": {
@@ -179,7 +179,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/order.ListResponseDTO"
+                            "$ref": "#/definitions/orderapp.OrdersPage"
                         }
                     },
                     "400": {
@@ -226,7 +226,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/order.CreateOrderDTO"
+                            "$ref": "#/definitions/orderapp.CreateOrderInput"
                         }
                     }
                 ],
@@ -234,7 +234,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/order.ResponseDTO"
+                            "$ref": "#/definitions/orderapp.OrderView"
                         }
                     },
                     "400": {
@@ -286,7 +286,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/order.ResponseDTO"
+                            "$ref": "#/definitions/orderapp.OrderView"
                         }
                     },
                     "400": {
@@ -346,7 +346,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/order.UpdateOrderDTO"
+                            "$ref": "#/definitions/orderapp.UpdateOrderInput"
                         }
                     }
                 ],
@@ -354,7 +354,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/order.ResponseDTO"
+                            "$ref": "#/definitions/orderapp.OrderView"
                         }
                     },
                     "400": {
@@ -457,7 +457,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user.CreateDTO"
+                            "$ref": "#/definitions/userapp.CreateUserInput"
                         }
                     }
                 ],
@@ -465,7 +465,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/user.ResponseDTO"
+                            "$ref": "#/definitions/userapp.UserView"
                         }
                     },
                     "400": {
@@ -511,7 +511,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/user.ResponseDTO"
+                            "$ref": "#/definitions/userapp.UserView"
                         }
                     },
                     "401": {
@@ -537,7 +537,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "auth.LoginDTO": {
+        "authapp.LoginInput": {
             "type": "object",
             "required": [
                 "email",
@@ -552,7 +552,7 @@ const docTemplate = `{
                 }
             }
         },
-        "auth.TokenResponseDTO": {
+        "authapp.TokenView": {
             "type": "object",
             "properties": {
                 "access_token": {
@@ -568,7 +568,7 @@ const docTemplate = `{
                 }
             }
         },
-        "order.CreateOrderDTO": {
+        "orderapp.CreateOrderInput": {
             "type": "object",
             "required": [
                 "title"
@@ -584,7 +584,7 @@ const docTemplate = `{
                 "order_services": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/order.OrderServiceInput"
+                        "$ref": "#/definitions/orderapp.OrderServiceItem"
                     }
                 },
                 "sent_at": {
@@ -599,53 +599,7 @@ const docTemplate = `{
                 }
             }
         },
-        "order.ListOrderServicesResponseDTO": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/order.OrderServiceResponse"
-                    }
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "page_size": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
-                },
-                "total_pages": {
-                    "type": "integer"
-                }
-            }
-        },
-        "order.ListResponseDTO": {
-            "type": "object",
-            "properties": {
-                "items": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/order.ResponseDTO"
-                    }
-                },
-                "page": {
-                    "type": "integer"
-                },
-                "page_size": {
-                    "type": "integer"
-                },
-                "total": {
-                    "type": "integer"
-                },
-                "total_pages": {
-                    "type": "integer"
-                }
-            }
-        },
-        "order.OrderServiceInput": {
+        "orderapp.OrderServiceItem": {
             "type": "object",
             "required": [
                 "start_date",
@@ -670,7 +624,7 @@ const docTemplate = `{
                 }
             }
         },
-        "order.OrderServiceResponse": {
+        "orderapp.OrderServiceView": {
             "type": "object",
             "properties": {
                 "created_at": {
@@ -699,7 +653,30 @@ const docTemplate = `{
                 }
             }
         },
-        "order.ResponseDTO": {
+        "orderapp.OrderServicesPage": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/orderapp.OrderServiceView"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "orderapp.OrderView": {
             "type": "object",
             "properties": {
                 "code": {
@@ -717,7 +694,7 @@ const docTemplate = `{
                 "order_services": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/order.OrderServiceResponse"
+                        "$ref": "#/definitions/orderapp.OrderServiceView"
                     }
                 },
                 "sent_at": {
@@ -734,7 +711,30 @@ const docTemplate = `{
                 }
             }
         },
-        "order.UpdateOrderDTO": {
+        "orderapp.OrdersPage": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/orderapp.OrderView"
+                    }
+                },
+                "page": {
+                    "type": "integer"
+                },
+                "page_size": {
+                    "type": "integer"
+                },
+                "total": {
+                    "type": "integer"
+                },
+                "total_pages": {
+                    "type": "integer"
+                }
+            }
+        },
+        "orderapp.UpdateOrderInput": {
             "type": "object",
             "required": [
                 "title"
@@ -750,7 +750,7 @@ const docTemplate = `{
                 "order_services": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/order.OrderServiceInput"
+                        "$ref": "#/definitions/orderapp.OrderServiceItem"
                     }
                 },
                 "removed_service_ids": {
@@ -772,7 +772,7 @@ const docTemplate = `{
                 }
             }
         },
-        "user.CreateDTO": {
+        "userapp.CreateUserInput": {
             "type": "object",
             "required": [
                 "email",
@@ -788,7 +788,7 @@ const docTemplate = `{
                 }
             }
         },
-        "user.ResponseDTO": {
+        "userapp.UserView": {
             "type": "object",
             "properties": {
                 "created_at": {
